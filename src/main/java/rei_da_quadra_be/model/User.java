@@ -1,5 +1,6 @@
 package rei_da_quadra_be.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
@@ -28,6 +29,9 @@ public class User implements UserDetails {
   private String password;
   @Enumerated(EnumType.STRING)
   private UserRole role;
+  @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
+  @JsonManagedReference
+  private List<Evento> eventos;
 
   public User(String login, String password, UserRole role) {
     this.login =  login;
