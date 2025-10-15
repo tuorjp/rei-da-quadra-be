@@ -1,5 +1,10 @@
 package rei_da_quadra_be.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -26,6 +31,26 @@ public class AuthenticationController {
   private final PasswordEncoder passwordEncoder;
 
   @PostMapping("/login")
+  @Operation(summary = "Autentica um usuário e retorna um token JWT")
+  @ApiResponses(
+    value = {
+      @ApiResponse(
+        responseCode = "200",
+        description = "Login bem-sucedido",
+        content = {
+          @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = LoginResponseDTO.class)
+          )
+        }
+      ),
+      @ApiResponse(
+        responseCode = "403",
+        description = "Credenciais inválidas",
+        content = @Content // Resposta de erro sem corpo
+      )
+    }
+  )
   public ResponseEntity<LoginResponseDTO> login(@RequestBody AuthenticationDTO data) {
     var usernamePassword = new UsernamePasswordAuthenticationToken(data.login, data.password);
 
@@ -41,7 +66,7 @@ public class AuthenticationController {
 
   @PostMapping("register")
   public ResponseEntity register(@RequestBody RegisterDTO data) {
-    if(this.userRepository.findByLogin(data.login) != null) {
+    if (this.userRepository.findByLogin(data.login) != null) {
       return ResponseEntity.badRequest().build();
     }
 
