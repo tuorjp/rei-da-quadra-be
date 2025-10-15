@@ -6,6 +6,6 @@ import rei_da_quadra_be.model.User;
 
 import java.util.List;
 
-public interface EventoRepository extends JpaRepository<Long, Evento> {
+public interface EventoRepository extends JpaRepository<Evento, Long> {
   List<Evento> findByUsuario(User usuario);
 }
