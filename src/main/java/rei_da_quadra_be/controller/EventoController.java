@@ -1,6 +1,7 @@
 package rei_da_quadra_be.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -13,6 +14,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import rei_da_quadra_be.dto.EventoRequestDTO;
 import rei_da_quadra_be.dto.EventoResponseDTO;
+import rei_da_quadra_be.dto.LoginResponseDTO;
 import rei_da_quadra_be.model.Evento;
 import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.service.EventoService;
@@ -48,7 +50,12 @@ public class EventoController {
   @GetMapping
   @Operation(summary = "Lista todos os eventos do usuário autenticado")
   @ApiResponses(value = {
-    @ApiResponse(responseCode = "200", description = "Lista de eventos retornada com sucesso")
+    @ApiResponse(responseCode = "200", description = "Lista de eventos retornada com sucesso", content = {
+      @Content(
+        mediaType = "application/json",
+        array = @ArraySchema(schema = @Schema(implementation = EventoResponseDTO.class))
+      )
+    })
   })
   public ResponseEntity<List<EventoResponseDTO>> listarEventos(
     @AuthenticationPrincipal User usuario
