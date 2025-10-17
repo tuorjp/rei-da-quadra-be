@@ -27,6 +27,7 @@ public class User implements UserDetails {
   private Long id;
   private String login;
   private String password;
+  private String nome;
   @Enumerated(EnumType.STRING)
   private UserRole role;
   @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -36,6 +37,13 @@ public class User implements UserDetails {
   public User(String login, String password, UserRole role) {
     this.login =  login;
     this.password = password;
+    this.role = role;
+  }
+
+  public User(String login, String password, String nome, UserRole role) {
+    this.login = login;
+    this.password = password;
+    this.nome = nome;
     this.role = role;
   }
 

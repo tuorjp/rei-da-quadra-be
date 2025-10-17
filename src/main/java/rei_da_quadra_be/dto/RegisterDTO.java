@@ -1,5 +1,6 @@
 package rei_da_quadra_be.dto;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
 import lombok.Setter;
 import rei_da_quadra_be.enums.UserRole;
@@ -7,7 +8,14 @@ import rei_da_quadra_be.enums.UserRole;
 @Getter
 @Setter
 public class RegisterDTO {
+  @NotBlank(message = "Login é obrigatório")
   public String login;
+
+  @NotBlank(message = "Senha é obrigatória")
   public String password;
-  public UserRole role;
+
+  @NotBlank(message = "Nome é obrigatório")
+  public String nome;
+
+  public UserRole role; // Opcional - será USER por padrão
 }
