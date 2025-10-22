@@ -10,7 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import rei_da_quadra_be.dto.AuthenticationDTO;
 import rei_da_quadra_be.dto.LoginResponseDTO;
 import rei_da_quadra_be.dto.RegisterDTO;
+import rei_da_quadra_be.dto.UserProfileDTO;
 import rei_da_quadra_be.enums.UserRole;
 import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.repository.UserRepository;
@@ -81,6 +84,39 @@ public class AuthenticationController {
 
     userRepository.save(newUser);
     return ResponseEntity.ok().build();
+  }
+
+  @GetMapping("/profile")
+  @Operation(summary = "Retorna os dados do perfil do usuário autenticado")
+  @ApiResponses(
+    value = {
+      @ApiResponse(
+        responseCode = "200",
+        description = "Perfil retornado com sucesso",
+        content = {
+          @Content(
+            mediaType = "application/json",
+            schema = @Schema(implementation = UserProfileDTO.class)
+          )
+        }
+      ),
+      @ApiResponse(
+        responseCode = "401",
+        description = "Não autenticado",
+        content = @Content
+      )
+    }
+  )
+  public ResponseEntity<UserProfileDTO> getProfile(Authentication authentication) {
+    User user = (User) authentication.getPrincipal();
+    
+    UserProfileDTO profile = new UserProfileDTO();
+    profile.setId(user.getId());
+    profile.setNome(user.getNome());
+    profile.setEmail(user.getLogin());
+    profile.setRole(user.getRole());
+    
+    return ResponseEntity.ok(profile);
   }
 }
 
