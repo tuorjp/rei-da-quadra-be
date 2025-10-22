@@ -7,11 +7,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -21,19 +21,18 @@ import rei_da_quadra_be.dto.AuthenticationDTO;
 import rei_da_quadra_be.dto.LoginResponseDTO;
 import rei_da_quadra_be.dto.RegisterDTO;
 import rei_da_quadra_be.dto.UserProfileDTO;
-import rei_da_quadra_be.enums.UserRole;
 import rei_da_quadra_be.model.User;
-import rei_da_quadra_be.repository.UserRepository;
 import rei_da_quadra_be.security.TokenService;
+import rei_da_quadra_be.service.UserService;
+import rei_da_quadra_be.service.exception.UserAlreadyExistsException;
 
 @RestController
 @RequestMapping("auth")
 @RequiredArgsConstructor
 public class AuthenticationController {
   private final AuthenticationManager authenticationManager;
-  private final UserRepository userRepository;
   private final TokenService tokenService;
-  private final PasswordEncoder passwordEncoder;
+  private final UserService userService;
 
   @PostMapping("/login")
   @Operation(summary = "Autentica um usuário e retorna um token JWT")
@@ -70,19 +69,13 @@ public class AuthenticationController {
   }
 
   @PostMapping("register")
-  public ResponseEntity<Void> register(@RequestBody @Valid RegisterDTO data) {
-    if (this.userRepository.findByLogin(data.login) != null) {
-      return ResponseEntity.badRequest().build();
+  public ResponseEntity<String> register(@RequestBody @Valid RegisterDTO data) {
+    try {
+      userService.createUser(data);
+    } catch (UserAlreadyExistsException e) {
+      return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
     }
 
-    String encryptedPassword = passwordEncoder.encode(data.password);
-
-    // Define role padrão como USER se não for informado
-    UserRole userRole = data.getRole() != null ? data.getRole() : UserRole.USER;
-
-    User newUser = new User(data.getLogin(), encryptedPassword, data.getNome(), userRole);
-
-    userRepository.save(newUser);
     return ResponseEntity.ok().build();
   }
 
