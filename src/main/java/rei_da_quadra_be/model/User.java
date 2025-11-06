@@ -1,86 +1,117 @@
 package rei_da_quadra_be.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import rei_da_quadra_be.enums.UserRole;
-
 import java.util.Collection;
-import java.util.List;
+import java.util.Collections;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+@Entity
 @Table(name = "users")
-@Entity(name = "users")
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class User implements UserDetails {
-  @EqualsAndHashCode.Include
+
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
-  private String login;
-  private String password;
-  private String nome;
-  @Enumerated(EnumType.STRING)
-  private UserRole role;
-  @OneToMany(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true)
-  @JsonManagedReference
-  private List<Evento> eventos;
 
-  public User(String login, String password, UserRole role) {
-    this.login =  login;
+  @Column(nullable = false)
+  private String nome;
+
+  @Column(nullable = false, unique = true)
+  private String email;
+
+  @Column(nullable = false)
+  private String password;
+
+  @Column(nullable = false)
+  private String role = "USER"; // ou "ROLE_USER" dependendo do seu padrão
+
+  @Column(nullable = false)
+  private boolean enabled = false; // começa desativado até confirmar o email
+
+  // --- Construtores ---
+  public User() {}
+
+  public User(String nome, String email, String password, String role) {
+    this.nome = nome;
+    this.email = email;
     this.password = password;
+    this.role = role;
+    this.enabled = false;
+  }
+
+  // --- Getters e Setters ---
+  public Long getId() {
+    return id;
+  }
+
+  public void setId(Long id) {
+    this.id = id;
+  }
+
+  public String getNome() {
+    return nome;
+  }
+
+  public void setNome(String nome) {
+    this.nome = nome;
+  }
+
+  public String getEmail() {
+    return email;
+  }
+
+  public void setEmail(String email) {
+    this.email = email;
+  }
+
+  public String getPassword() {
+    return password;
+  }
+
+  public void setPassword(String password) {
+    this.password = password;
+  }
+
+  public String getRole() {
+    return role;
+  }
+
+  public void setRole(String role) {
     this.role = role;
   }
 
-  public User(String login, String password, String nome, UserRole role) {
-    this.login = login;
-    this.password = password;
-    this.nome = nome;
-    this.role = role;
+  public boolean isEnabled() {
+    return enabled;
+  }
+
+  public void setEnabled(boolean enabled) {
+    this.enabled = enabled;
+  }
+
+  // --- Métodos exigidos por UserDetails (Spring Security) ---
+  @Override
+  public Collection<? extends GrantedAuthority> getAuthorities() {
+    return Collections.emptyList(); // você pode adaptar se tiver enum de roles
   }
 
   @Override
   public String getUsername() {
-    return login;
-  }
-
-  @Override
-  public Collection<? extends GrantedAuthority> getAuthorities() {
-    if(this.role == UserRole.ADMIN) {
-      return List.of(
-              new SimpleGrantedAuthority("ROLE_ADMIN"),
-              new SimpleGrantedAuthority("ROLE_USER")
-      );
-    } else {
-      return List.of(new SimpleGrantedAuthority("ROLE_USER"));
-    }
+    return this.email; // o login é feito pelo email
   }
 
   @Override
   public boolean isAccountNonExpired() {
-    return true; // Conta ativa
+    return true;
   }
 
   @Override
   public boolean isAccountNonLocked() {
-    return true; // Conta não bloqueada
+    return true;
   }
 
   @Override
   public boolean isCredentialsNonExpired() {
-    return true; // Senha não expirada
-  }
-
-  @Override
-  public boolean isEnabled() {
-    return true; // Usuário ativo
+    return true;
   }
 }

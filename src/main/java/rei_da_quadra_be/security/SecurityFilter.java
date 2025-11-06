@@ -25,7 +25,7 @@ protected void doFilterInternal(HttpServletRequest request, HttpServletResponse 
 
   if (token != null) {
     var login = tokenService.validateToken(token);
-    UserDetails user = userRepository.findByLogin(login);
+    UserDetails user = userRepository.findByEmail(login);
 
     if (user != null) {
       var authentication = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());

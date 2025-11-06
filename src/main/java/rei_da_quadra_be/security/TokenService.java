@@ -24,7 +24,7 @@ public class TokenService {
 
       String token = JWT.create()
               .withIssuer("login_jwt") //nome do emissor
-              .withSubject(user.getLogin()) //subject é o usuário
+              .withSubject(user.getEmail()) //subject é o usuário
               .withExpiresAt(generateExpirationDate())
               .sign(alg); //assina e gera o token
 
