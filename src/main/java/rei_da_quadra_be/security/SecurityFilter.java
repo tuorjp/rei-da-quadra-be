@@ -38,7 +38,7 @@ public class SecurityFilter extends OncePerRequestFilter {
             return;
         }
 
-        // PROCESSAMENTO DO TOKEN
+        // --- PROCESSAMENTO DO TOKEN ---
         String token = recoverToken(request);
 
         if (token != null && !token.isBlank()) {
