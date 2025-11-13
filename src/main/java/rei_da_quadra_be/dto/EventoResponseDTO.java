@@ -28,7 +28,7 @@ public class EventoResponseDTO {
     dto.setLocal(evento.getLocal());
     dto.setDataHorario(evento.getDataHorario());
     dto.setUsuarioId(evento.getUsuario().getId());
-    dto.setUsuarioLogin(evento.getUsuario().getLogin());
+    dto.setUsuarioLogin(evento.getUsuario().getEmail());
     return dto;
   }
 }

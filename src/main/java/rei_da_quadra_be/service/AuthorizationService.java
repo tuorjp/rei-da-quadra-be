@@ -10,10 +10,17 @@ import rei_da_quadra_be.repository.UserRepository;
 @Service
 @RequiredArgsConstructor
 public class AuthorizationService implements UserDetailsService {
-  private final UserRepository userRepository;
 
-  @Override
-  public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-    return userRepository.findByLogin(username);
-  }
+    private final UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        UserDetails user = userRepository.findByEmail(email);
+
+        if (user == null) {
+            throw new UsernameNotFoundException("Usuário não encontrado");
+        }
+
+        return user;
+    }
 }

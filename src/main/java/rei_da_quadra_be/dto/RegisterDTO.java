@@ -9,7 +9,7 @@ import rei_da_quadra_be.enums.UserRole;
 @Setter
 public class RegisterDTO {
   @NotBlank(message = "Login é obrigatório")
-  public String login;
+  public String email;
 
   @NotBlank(message = "Senha é obrigatória")
   public String password;

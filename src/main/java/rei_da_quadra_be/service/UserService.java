@@ -1,33 +1,49 @@
 package rei_da_quadra_be.service;
 
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
+import java.time.LocalDateTime;
+import java.util.UUID;
+import jakarta.mail.MessagingException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import rei_da_quadra_be.dto.RegisterDTO;
-import rei_da_quadra_be.enums.UserRole;
 import rei_da_quadra_be.model.User;
+import rei_da_quadra_be.model.ConfirmationToken;
 import rei_da_quadra_be.repository.UserRepository;
-import rei_da_quadra_be.service.exception.UserAlreadyExistsException;
+import rei_da_quadra_be.repository.ConfirmationTokenRepository;
 
 @Service
-@RequiredArgsConstructor
 public class UserService {
-  private final UserRepository userRepository;
-  private final PasswordEncoder passwordEncoder;
 
-  public void createUser(RegisterDTO data) {
-    if (this.userRepository.findByLogin(data.login) != null) {
-      throw new UserAlreadyExistsException("Usuário já existente: " + data.login);
-    }
+  @Autowired
+  private UserRepository userRepository;
 
-    String encryptedPassword = passwordEncoder.encode(data.password);
+  @Autowired
+  private ConfirmationTokenRepository tokenRepository;
 
-    // Define role padrão como USER se não for informado
-    UserRole userRole = data.getRole() != null ? data.getRole() : UserRole.USER;
+  @Autowired
+  private PasswordEncoder passwordEncoder;
 
-    User newUser = new User(data.getLogin(), encryptedPassword, data.getNome(), userRole);
+  @Autowired
+  private EmailService emailService;
 
-    userRepository.save(newUser);
+  public void registrarUsuario(User user) throws MessagingException {
+    user.setPassword(passwordEncoder.encode(user.getPassword()));
+    user.setEnabled(false); // usuário começa inativo
+    userRepository.save(user);
+
+    // Gera token de confirmação
+    String token = UUID.randomUUID().toString();
+
+    ConfirmationToken confirmationToken = new ConfirmationToken();
+    confirmationToken.setToken(token);
+    confirmationToken.setUser(user);
+    confirmationToken.setCreatedAt(LocalDateTime.now());
+    confirmationToken.setExpiresAt(LocalDateTime.now().plusHours(24));
+
+    tokenRepository.save(confirmationToken);
+
+    // Envia email de confirmação
+      emailService.enviarEmailConfirmacao(user, token);
+
   }
 }
