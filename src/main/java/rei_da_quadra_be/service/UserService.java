@@ -43,6 +43,7 @@ public class UserService {
     tokenRepository.save(confirmationToken);
 
     // Envia email de confirmação
-    emailService.enviarEmailConfirmacao(user.getEmail(), token);
+      emailService.enviarEmailConfirmacao(user, token);
+
   }
 }

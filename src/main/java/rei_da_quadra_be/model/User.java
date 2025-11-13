@@ -3,6 +3,8 @@ package rei_da_quadra_be.model;
 import jakarta.persistence.*;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
@@ -81,21 +83,22 @@ public class User implements UserDetails {
     this.role = role;
   }
 
-  public boolean isEnabled() {
-    return enabled;
-  }
+    public boolean isEnabled() {
+        return enabled;
+    }
 
-  public void setEnabled(boolean enabled) {
-    this.enabled = enabled;
-  }
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
 
-  // --- Métodos exigidos por UserDetails (Spring Security) ---
+  // Metodos exigidos por UserDetails (Spring Security)
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return Collections.emptyList(); // você pode adaptar se tiver enum de roles
+      return List.of(() -> "ROLE_USER");
   }
 
-  @Override
+
+    @Override
   public String getUsername() {
     return this.email; // o login é feito pelo email
   }

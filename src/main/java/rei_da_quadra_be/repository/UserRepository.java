@@ -7,5 +7,5 @@ import rei_da_quadra_be.model.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, Long> {
-  UserDetails findByEmail(String login);
+    UserDetails findByEmail(String email);
 }

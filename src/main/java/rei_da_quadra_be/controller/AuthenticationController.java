@@ -73,7 +73,7 @@ public class AuthenticationController {
     user.setEnabled(true);
     userRepository.save(user);
 
-    return ResponseEntity.ok("Email confirmado com sucesso! Você já pode fazer login.");
+    return ResponseEntity.ok("Email confirmado com sucesso!");
   }
 
   @PostMapping("/login")
