@@ -5,9 +5,13 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -30,6 +34,24 @@ public class User implements UserDetails {
 
   @Column(nullable = false)
   private boolean enabled = false; // começa desativado até confirmar o email
+
+  @Column(name = "pontos_habilidade", nullable = false)
+  private Integer pontosHabilidade = 1000;
+
+  @Column(name = "nivel_habilidade", nullable = false)
+  private Integer nivelHabilidade = 3;
+
+  @OneToMany(mappedBy = "jogador")
+  private List<Inscricao> inscricoes;
+
+  @OneToMany(mappedBy = "jogador")
+  private List<ParticipacaoDesempenho> desempenhos;
+
+  @OneToMany(mappedBy = "jogador")
+  private List<HistoricoPontuacao> historicoPontuacao;
+
+  @OneToMany(mappedBy = "jogador")
+  private List<HistoricoTransferencia> historicoTransferencia;
 
   // --- Construtores ---
   public User() {}
