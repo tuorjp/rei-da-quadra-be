@@ -47,13 +47,21 @@ public class AuthenticationController {
   // Cadastro de novo usuário
   @PostMapping("/register")
   public ResponseEntity<String> registrar(@RequestBody User user) {
+    // Verifica se já existe usuário com o mesmo email
+    if (userRepository.findByEmail(user.getEmail()) != null) {
+      return ResponseEntity
+              .status(409)
+              .body("Já existe um cadastro com esse email.");
+    }
+
     try {
       userService.registrarUsuario(user);
-      return ResponseEntity.ok("Cadastro realizado com sucesso! Verifique seu email para confirmar.");
+      return ResponseEntity.ok("Cadastro realizado com sucesso!");
     } catch (MessagingException e) {
       return ResponseEntity.internalServerError().body("Erro ao enviar email: " + e.getMessage());
     }
   }
+
 
   // Confirmação de email
   @GetMapping("/confirm")
