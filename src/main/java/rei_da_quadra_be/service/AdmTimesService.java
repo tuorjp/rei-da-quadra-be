@@ -4,11 +4,15 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rei_da_quadra_be.enums.NivelHabilidade;
+import rei_da_quadra_be.enums.StatusTime;
+import rei_da_quadra_be.enums.TipoAcaoEmJogo;
 import rei_da_quadra_be.model.*;
 import rei_da_quadra_be.repository.*;
+import rei_da_quadra_be.service.exception.EventoNaoEncontradoException;
+import rei_da_quadra_be.service.exception.NumeroInsuficienteInscritosException;
+import rei_da_quadra_be.service.exception.TimeDeEsperaNaoConfiguradoException;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -18,129 +22,128 @@ public class AdmTimesService {
   private final TimeRepository timeRepository;
   private final InscricaoRepository inscricaoRepository;
   private final PartidaRepository partidaRepository;
-  private final UserRepository userRepository; // Para salvar atualizações de Elo no User
+  private final UserRepository userRepository;
 
-  /**
-   * Passo 1: Inicialização do Evento.
-   * Cria os times (baldes vazios) e distribui os jogadores inscritos conforme regras.
-   */
+  //cria os times de um evento que foi criado
+  //nenhuma partida ocorreu ainda
   @Transactional
   public void montarTimesInicial(Long eventoId) {
-    Evento evento = eventoRepository.findById(eventoId)
-      .orElseThrow(() -> new RuntimeException("Evento não encontrado"));
+    Evento evento = eventoRepository
+      .findById(eventoId)
+      .orElseThrow(() -> new EventoNaoEncontradoException("Evento não encontrado"));
 
     List<Inscricao> inscricoes = inscricaoRepository.findByEventoId(eventoId);
     int totalInscritos = inscricoes.size();
     int jogadoresPorTime = evento.getJogadoresPorTime();
 
     if (totalInscritos < jogadoresPorTime * 2) {
-      throw new RuntimeException("Número insuficiente de inscritos para formar ao menos 2 times.");
+      throw new NumeroInsuficienteInscritosException("Número insuficiente de inscritos para formar ao menos 2 times.");
     }
 
-    // 1. Calcular quantos times "Ativos" cabem
+    //calcular quantos times "Ativos" cabem
     int qtdTimesAtivos = totalInscritos / jogadoresPorTime;
     int sobra = totalInscritos % jogadoresPorTime;
 
-    // 2. Criar os Times no Banco
+    //cria os times no Banco
     List<Time> timesCriados = new ArrayList<>();
 
-    // Times Ativos (Time 1, Time 2...)
+    //times ativos
     for (int i = 1; i <= qtdTimesAtivos; i++) {
       Time t = new Time();
       t.setEvento(evento);
       t.setNome("Time " + i);
       t.setTimeDeEspera(false);
-      t.setStatus("ativo");
+      t.setStatus(StatusTime.ATIVO);
       timesCriados.add(timeRepository.save(t));
     }
 
-    // Time de Espera (se houver sobra ou se a lógica for ter sempre uma reserva cheia)
-    // A regra diz: "Caso haja incompatibilidade... sistema irá montar um time de reservas"
-    // Aqui assumimos que se sobrar 1 pessoa, já existe um balde de reserva.
+    /*
+     * Time de Espera
+     * A regra diz: "Caso haja incompatibilidade... o sistema irá montar um time de reservas"
+     * Aqui assumimos que se sobrar 1 pessoa, já existe um balde de reserva.
+     */
     Time timeEspera = new Time();
     timeEspera.setEvento(evento);
     timeEspera.setNome("Time de Espera");
     timeEspera.setTimeDeEspera(true);
-    timeEspera.setStatus("ativo"); // Está ativo, mas é de espera
-    timeEspera = timeRepository.save(timeEspera); // Salva referência
+    timeEspera.setStatus(StatusTime.ESPERA); //ativo, mas é de espera
+    timeEspera = timeRepository.save(timeEspera);
 
-    // 3. Lógica de Distribuição (Algoritmo de Balanceamento)
+    //Lógica de Distribuição (Algoritmo de Balanceamento)
     distribuirJogadoresNosTimes(inscricoes, timesCriados, timeEspera, jogadoresPorTime);
   }
 
-  /**
-   * Algoritmo de Distribuição Inicial
-   * Regra: Pelo menos 1 craque por time, depois equilibra por Elo.
-   */
+  //distribuição Inicial
+  //regra: pelo menos 1 craque por time, depois equilibra por Elo.
   private void distribuirJogadoresNosTimes(List<Inscricao> todosInscritos, List<Time> timesAtivos, Time timeEspera, int maxPorTime) {
-    // Separa os Craques
-    List<Inscricao> craques = todosInscritos.stream()
+    //separa os Craques
+    List<Inscricao> craques = todosInscritos
+      .stream()
       .filter(i -> i.getJogador().getNivelHabilidade() == NivelHabilidade.CRAQUE)
-      .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) // Elo Decrescente
+      .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) //elo decrescente
       .toList();
 
-    // O resto (Medianos e Pernas)
-    List<Inscricao> outros = todosInscritos.stream()
+    //medianos e pernas-de-pau
+    List<Inscricao> outros = todosInscritos
+      .stream()
       .filter(i -> i.getJogador().getNivelHabilidade() != NivelHabilidade.CRAQUE)
-      .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) // Elo Decrescente
+      .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) //elo decrescente
       .toList();
 
-    // Fila auxiliar para distribuição
+    //fila auxiliar para distribuição
     Queue<Inscricao> filaCraques = new LinkedList<>(craques);
     Queue<Inscricao> filaGeral = new LinkedList<>(outros);
 
-    // Passo A: Garantir 1 Craque por time ativo (enquanto houver craques)
+    //garantir 1 Craque por time ativo (enquanto houver craques)
     for (Time time : timesAtivos) {
       if (!filaCraques.isEmpty()) {
         alocarJogador(filaCraques.poll(), time);
       } else {
-        // Se acabaram os craques, pega o melhor do geral
+        //se acabaram os craques, pega o melhor do geral
         if (!filaGeral.isEmpty()) alocarJogador(filaGeral.poll(), time);
       }
     }
 
-    // Se sobraram craques, joga para o topo da fila geral para serem distribuídos
+    //se sobraram craques, joga para o topo da fila geral para serem distribuídos
     while (!filaCraques.isEmpty()) {
-      // Adiciona no início da lista (uma simplificação, ideal seria reordenar)
+      //adiciona no início da lista (uma simplificação, ideal seria reordenar)
       List<Inscricao> temp = new ArrayList<>();
       temp.add(filaCraques.poll());
       temp.addAll(filaGeral);
       filaGeral = new LinkedList<>(temp);
     }
 
-    // Passo B: Distribuição "Snake Draft" (Serpente) para equilibrar o restante
-    // Vai do Time 1 ao N, depois do N ao 1.
+    //distribuição "Snake Draft" (Serpente) para equilibrar o restante
+    //pai do Time 1 ao N, depois do N ao 1.
     boolean ida = true;
     while (!filaGeral.isEmpty()) {
-      // Verifica se todos os times ativos estão cheios
+      //verifica se todos os times ativos estão cheios
       boolean temVaga = timesAtivos.stream().anyMatch(t -> contarJogadoresNoTime(t) < maxPorTime);
 
       if (!temVaga) {
-        // Se todos os ativos estão cheios, o resto vai para a ESPERA
-        alocarJogador(filaGeral.poll(), timeEspera);
+        //se todos os ativos estão cheios, o resto vai para a ESPERA
+        alocarJogador(Objects.requireNonNull(filaGeral.poll()), timeEspera);
         continue;
       }
 
       if (ida) {
         for (int i = 0; i < timesAtivos.size(); i++) {
           if (!filaGeral.isEmpty() && contarJogadoresNoTime(timesAtivos.get(i)) < maxPorTime) {
-            alocarJogador(filaGeral.poll(), timesAtivos.get(i));
+            alocarJogador(Objects.requireNonNull(filaGeral.poll()), timesAtivos.get(i));
           }
         }
       } else {
         for (int i = timesAtivos.size() - 1; i >= 0; i--) {
           if (!filaGeral.isEmpty() && contarJogadoresNoTime(timesAtivos.get(i)) < maxPorTime) {
-            alocarJogador(filaGeral.poll(), timesAtivos.get(i));
+            alocarJogador(Objects.requireNonNull(filaGeral.poll()), timesAtivos.get(i));
           }
         }
       }
-      ida = !ida; // Inverte direção
+      ida = !ida; //inverte direção
     }
   }
 
-  /**
-   * Atualiza pontuação e processa o rodízio após uma partida.
-   */
+  //atualiza pontuação e processa o rodízio após uma partida.
   @Transactional
   public void processarFimDePartida(Long partidaId, Long timeVencedorId) {
     Partida partida = partidaRepository.findById(partidaId)
@@ -164,88 +167,93 @@ public class AdmTimesService {
     rodizioDeJogadores(evento, timePerdedor);
   }
 
-  /**
-   * Lógica Central do Rodízio com "Tickets"
-   */
+  //lógica central do rodízio com tickets
   private void rodizioDeJogadores(Evento evento, Time timePerdedor) {
-    // Busca o time de espera do evento
-    Time timeEspera = timeRepository.findByEventoAndTimeDeEsperaTrue(evento)
-      .orElseThrow(() -> new RuntimeException("Time de espera não configurado"));
+    //busca o time de espera do evento
+    Time timeEspera = timeRepository
+      .findByEventoAndTimeDeEsperaTrue(evento)
+      .orElseThrow(() -> new TimeDeEsperaNaoConfiguradoException("Time de espera não configurado"));
 
     List<Inscricao> jogadoresNoBanco = inscricaoRepository.findByTimeAtualAndEvento(timeEspera, evento);
     List<Inscricao> jogadoresNoTimePerdedor = inscricaoRepository.findByTimeAtualAndEvento(timePerdedor, evento);
 
     if (jogadoresNoBanco.isEmpty()) {
-      return; // Ninguém pra trocar, segue o jogo
+      return; //ninguém para trocar, segue o jogo
     }
 
     int tamanhoDoTime = evento.getJogadoresPorTime();
 
-    // --- QUEM ENTRA (Sai do Banco -> Vai pro Time Perdedor/Campo) ---
-    // Regra de Ticket: Prioridade para quem jogou MENOS.
-    // Desempate: Nivel de Habilidade (para equilibrar) ou Ordem de Chegada (ID).
-    List<Inscricao> quemEntra = jogadoresNoBanco.stream()
+    //QUEM ENTRA (Sai do Banco -> Vai pro Time Perdedor/Campo)
+    //Regra de Ticket: Prioridade para quem jogou MENOS.
+    //Desempate: Nivel de Habilidade (para equilibrar) ou Ordem de Chegada (ID).
+    List<Inscricao> quemEntra = jogadoresNoBanco
+      .stream()
       .sorted(Comparator
-        .comparingInt(Inscricao::getPartidasJogadas) // Menor número de partidas primeiro (Ticket)
-        .thenComparingInt(i -> i.getJogador().getPontosHabilidade())) // Desempate por Elo (opcional)
+        .comparingInt(Inscricao::getPartidasJogadas) //menor número de partidas primeiro (Ticket)
+        .thenComparingInt(i -> i.getJogador().getPontosHabilidade())) //desempate por elo
       .limit(tamanhoDoTime)
-      .collect(Collectors.toList());
+      .toList();
 
-    // --- QUEM SAI (Sai do Time Perdedor -> Vai pro Banco) ---
-    // A regra diz "jogadores do time perdedor serão selecionados para compor time de reserva".
-    // Normalmente sai o time inteiro, mas se o banco for menor que o time, fazemos troca parcial?
-    // Assumindo troca total ou até esvaziar o banco.
+    //QUEM SAI (Sai do Time Perdedor → Vai para o Banco)
+    //a regra diz "jogadores do time perdedor serão selecionados para compor time de reserva".
+    //normalmente sai o time inteiro, mas se o banco for menor que o time, fazemos troca parcial
+    //assumindo troca total ou até esvaziar o banco.
     List<Inscricao> quemSai = new ArrayList<>(jogadoresNoTimePerdedor);
 
-    // Executa a troca no banco de dados
+    //executa a troca no banco de dados
     for (Inscricao entrando : quemEntra) {
-      entrando.setTimeAtual(timePerdedor); // Entra em campo (no lugar do perdedor)
+      entrando.setTimeAtual(timePerdedor); //entra em campo (no lugar do perdedor)
       inscricaoRepository.save(entrando);
     }
 
     for (Inscricao saindo : quemSai) {
-      saindo.setTimeAtual(timeEspera); // Vai pro banco
+      saindo.setTimeAtual(timeEspera); //vai para o banco
       inscricaoRepository.save(saindo);
     }
 
-    // Nota: Dependendo da regra exata de "Rei da Quadra", o time vencedor continua.
-    // O time perdedor recebe os novos jogadores e vira o "Desafiante".
+    //dependendo da regra exata, o time vencedor continua.
+    //o time perdedor recebe os novos jogadores e vira o "Desafiante".
   }
 
-  /**
-   * Método para atualizar pontuação individual (chamado a cada gol/ação)
-   */
+  //método para atualizar pontuação individual chamado a cada gol/ação do tipo TipoAcaoEmJogo
   @Transactional
-  public void computarAcaoJogador(Long jogadorId, String tipoAcao) {
+  public void computarAcaoJogador(Long jogadorId, TipoAcaoEmJogo tipoAcao) {
     User user = userRepository.findById(jogadorId).orElseThrow();
 
     int pontosGanhos = 0;
     switch (tipoAcao) {
-      case "GOL": pontosGanhos = 15; break;
-      case "ASSISTENCIA": pontosGanhos = 10; break;
-      case "DEFESA": pontosGanhos = 5; break;
-      // etc
+      case TipoAcaoEmJogo.GOL:
+        pontosGanhos = 20;
+        break;
+      case TipoAcaoEmJogo.ASSISTENCIA:
+        pontosGanhos = 10;
+        break;
+      case TipoAcaoEmJogo.DEFESA:
+        pontosGanhos = 5;
+        break;
+      case TipoAcaoEmJogo.FALTA:
+        pontosGanhos = -15;
+        break;
     }
 
-    // Atualiza Elo
+    //atualiza elo
     user.setPontosHabilidade(user.getPontosHabilidade() + pontosGanhos);
 
-    // Pode atualizar o Nível se bater certas metas
+    //atualizar o Nível se bater certas metas
     if (user.getPontosHabilidade() > 2400) user.setNivelHabilidade(NivelHabilidade.CRAQUE);
     else if (user.getPontosHabilidade() > 800) user.setNivelHabilidade(NivelHabilidade.MEDIANO);
 
     userRepository.save(user);
   }
 
-  // --- Métodos Auxiliares ---
-
+  //métodos auxiliares
   private void alocarJogador(Inscricao inscricao, Time time) {
     inscricao.setTimeAtual(time);
     inscricaoRepository.save(inscricao);
   }
 
   private long contarJogadoresNoTime(Time time) {
-    // Idealmente usar countByTimeAtual no repository para performance
+    //countByTimeAtual no repository para performance
     return inscricaoRepository.countByTimeAtual(time);
   }
 

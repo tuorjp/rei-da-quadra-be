@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import rei_da_quadra_be.enums.StatusTime;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,9 +37,7 @@ public class Time {
 
   // Status do time: 'ativo', 'inoperante'
   @Column(name = "status", length = 20, nullable = false)
-  private String status = "ativo";
-
-  // --- Relacionamentos ---
+  private StatusTime status = StatusTime.ATIVO;
 
   @ManyToOne
   @JoinColumn(name = "evento_id", nullable = false)

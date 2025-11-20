@@ -33,11 +33,12 @@ public class DatabaseSeeder {
       System.out.println("Iniciando Seeding do Banco de Dados...");
 
       limparBanco();
+      criarUser("ADMIN", "admin@gmail.com", 5000, NivelHabilidade.CRAQUE);
 
       List<User> users = criarUsuarios();
       System.out.println("15 Usuários criados.");
 
-      User organizador = users.get(0);
+      User organizador = users.getFirst();
 
       Evento evento = criarEvento(organizador);
       System.out.println("Evento criado: " + evento.getNome());
