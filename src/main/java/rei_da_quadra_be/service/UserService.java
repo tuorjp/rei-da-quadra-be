@@ -1,15 +1,16 @@
 package rei_da_quadra_be.service;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.model.ConfirmationToken;
-import rei_da_quadra_be.repository.UserRepository;
+import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.repository.ConfirmationTokenRepository;
+import rei_da_quadra_be.repository.UserRepository;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Service
 public class UserService {

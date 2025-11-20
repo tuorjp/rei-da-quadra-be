@@ -14,7 +14,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import rei_da_quadra_be.dto.EventoRequestDTO;
 import rei_da_quadra_be.dto.EventoResponseDTO;
-import rei_da_quadra_be.dto.LoginResponseDTO;
 import rei_da_quadra_be.model.Evento;
 import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.service.EventoService;

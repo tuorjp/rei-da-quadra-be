@@ -16,12 +16,13 @@ import rei_da_quadra_be.dto.AuthenticationDTO;
 import rei_da_quadra_be.dto.LoginResponseDTO;
 import rei_da_quadra_be.dto.UserProfileDTO;
 import rei_da_quadra_be.enums.UserRole;
-import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.model.ConfirmationToken;
-import rei_da_quadra_be.repository.UserRepository;
+import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.repository.ConfirmationTokenRepository;
+import rei_da_quadra_be.repository.UserRepository;
 import rei_da_quadra_be.security.TokenService;
 import rei_da_quadra_be.service.UserService;
+
 import java.time.LocalDateTime;
 
 @RestController

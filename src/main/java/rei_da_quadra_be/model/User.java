@@ -1,15 +1,14 @@
 package rei_da_quadra_be.model;
 
 import jakarta.persistence.*;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import rei_da_quadra_be.enums.NivelHabilidade;
+
+import java.util.Collection;
+import java.util.List;
 
 @Getter
 @Setter

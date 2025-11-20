@@ -1,6 +1,5 @@
 package rei_da_quadra_be.service;
 
-import io.swagger.v3.core.util.ReflectionUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import rei_da_quadra_be.model.Evento;
