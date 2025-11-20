@@ -2,6 +2,8 @@ package rei_da_quadra_be.service;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
+import java.io.UnsupportedEncodingException;
+
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,7 +28,7 @@ public class UserService {
   @Autowired
   private EmailService emailService;
 
-  public void registrarUsuario(User user) throws MessagingException {
+  public void registrarUsuario(User user) throws MessagingException, UnsupportedEncodingException {
     user.setPassword(passwordEncoder.encode(user.getPassword()));
     user.setEnabled(false); // usuário começa inativo
     userRepository.save(user);
@@ -43,7 +45,6 @@ public class UserService {
     tokenRepository.save(confirmationToken);
 
     // Envia email de confirmação
-      emailService.enviarEmailConfirmacao(user, token);
-
+    emailService.enviarEmailConfirmacao(user, token);
   }
 }
