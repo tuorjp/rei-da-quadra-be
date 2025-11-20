@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import rei_da_quadra_be.enums.StatusEvento;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -48,7 +49,7 @@ public class Evento {
   private Integer totalPartidasDefinidas; //total de partidas no evento
 
   @Column(name = "status", length = 20, nullable = false)
-  private String status = "ativo";
+  private StatusEvento status = StatusEvento.ATIVO;
 
   @Column(name = "cor_primaria", length = 7)
   private String corPrimaria;
