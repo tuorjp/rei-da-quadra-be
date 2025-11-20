@@ -22,6 +22,8 @@ import rei_da_quadra_be.repository.UserRepository;
 import rei_da_quadra_be.repository.ConfirmationTokenRepository;
 import rei_da_quadra_be.security.TokenService;
 import rei_da_quadra_be.service.UserService;
+
+import java.io.UnsupportedEncodingException; // Import adicionado
 import java.time.LocalDateTime;
 
 @RestController
@@ -57,7 +59,9 @@ public class AuthenticationController {
     try {
       userService.registrarUsuario(user);
       return ResponseEntity.ok("Cadastro realizado com sucesso!");
-    } catch (MessagingException e) {
+
+      // AQUI ESTÁ A CORREÇÃO: Captura ambas as exceções
+    } catch (MessagingException | UnsupportedEncodingException e) {
       return ResponseEntity.internalServerError().body("Erro ao enviar email: " + e.getMessage());
     }
   }
