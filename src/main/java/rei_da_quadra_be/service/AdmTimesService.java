@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import rei_da_quadra_be.enums.NivelHabilidade;
 import rei_da_quadra_be.model.*;
 import rei_da_quadra_be.repository.*;
 
@@ -19,11 +20,6 @@ public class AdmTimesService {
   private final InscricaoRepository inscricaoRepository;
   private final PartidaRepository partidaRepository;
   private final UserRepository userRepository; // Para salvar atualizações de Elo no User
-
-  // Constantes de Nível
-  private static final int NIVEL_CRAQUE = 3;
-  private static final int NIVEL_MEDIANO = 2;
-  private static final int NIVEL_PERNA_DE_PAU = 1;
 
   /**
    * Passo 1: Inicialização do Evento.
@@ -80,15 +76,15 @@ public class AdmTimesService {
   private void distribuirJogadoresNosTimes(List<Inscricao> todosInscritos, List<Time> timesAtivos, Time timeEspera, int maxPorTime) {
     // Separa os Craques
     List<Inscricao> craques = todosInscritos.stream()
-      .filter(i -> i.getJogador().getNivelHabilidade() == NIVEL_CRAQUE)
+      .filter(i -> i.getJogador().getNivelHabilidade() == NivelHabilidade.CRAQUE)
       .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) // Elo Decrescente
-      .collect(Collectors.toList());
+      .toList();
 
     // O resto (Medianos e Pernas)
     List<Inscricao> outros = todosInscritos.stream()
-      .filter(i -> i.getJogador().getNivelHabilidade() != NIVEL_CRAQUE)
+      .filter(i -> i.getJogador().getNivelHabilidade() != NivelHabilidade.CRAQUE)
       .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) // Elo Decrescente
-      .collect(Collectors.toList());
+      .toList();
 
     // Fila auxiliar para distribuição
     Queue<Inscricao> filaCraques = new LinkedList<>(craques);
@@ -236,8 +232,8 @@ public class AdmTimesService {
     user.setPontosHabilidade(user.getPontosHabilidade() + pontosGanhos);
 
     // Pode atualizar o Nível se bater certas metas
-    if (user.getPontosHabilidade() > 2400) user.setNivelHabilidade(NIVEL_CRAQUE);
-    else if (user.getPontosHabilidade() > 800) user.setNivelHabilidade(NIVEL_MEDIANO);
+    if (user.getPontosHabilidade() > 2400) user.setNivelHabilidade(NivelHabilidade.CRAQUE);
+    else if (user.getPontosHabilidade() > 800) user.setNivelHabilidade(NivelHabilidade.MEDIANO);
 
     userRepository.save(user);
   }

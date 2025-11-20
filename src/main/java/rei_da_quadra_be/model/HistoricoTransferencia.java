@@ -24,13 +24,11 @@ public class HistoricoTransferencia {
   @Column(name = "data_transferencia")
   private LocalDateTime dataTransferencia = LocalDateTime.now();
 
-  // --- Relacionamentos ---
-
   @ManyToOne
   @JoinColumn(name = "evento_id", nullable = false)
   private Evento evento;
 
-  // A partida que causou a transferência (geralmente a derrota)
+  //partida que causou a transferência
   @ManyToOne
   @JoinColumn(name = "partida_id_gatilho", nullable = false)
   private Partida partidaGatilho;

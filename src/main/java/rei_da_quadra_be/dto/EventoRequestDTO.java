@@ -1,6 +1,5 @@
 package rei_da_quadra_be.dto;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,8 +20,8 @@ public class EventoRequestDTO {
   public Evento toEvento() {
     Evento evento = new Evento();
     evento.setNome(this.nome);
-    evento.setLocal(this.local);
-    evento.setDataHorario(this.dataHorario);
+    evento.setLocalEvento(this.local);
+    evento.setDataHorarioEvento(this.dataHorario);
     return evento;
   }
 }

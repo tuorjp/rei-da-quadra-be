@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import rei_da_quadra_be.enums.StatusPartida;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -26,17 +27,14 @@ public class Partida {
   @Column(name = "data_partida")
   private LocalDateTime dataPartida = LocalDateTime.now();
 
-  // Status da partida: 'jogada', 'cancelada'
   @Column(name = "status", length = 20, nullable = false)
-  private String status = "jogada";
+  private StatusPartida status = StatusPartida.AGUARDANDO_INICIO;
 
   @Column(name = "time_a_placar", nullable = false)
   private Integer timeAPlacar;
 
   @Column(name = "time_b_placar", nullable = false)
   private Integer timeBPlacar;
-
-  // --- Relacionamentos ---
 
   @ManyToOne
   @JoinColumn(name = "evento_id", nullable = false)
@@ -50,15 +48,15 @@ public class Partida {
   @JoinColumn(name = "time_b_id", nullable = false)
   private Time timeB;
 
-  // Lista de desempenho individual dos jogadores nesta partida
+  //lista de desempenho individual dos jogadores nesta partida
   @OneToMany(mappedBy = "partida", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<ParticipacaoDesempenho> participacoes = new ArrayList<>();
 
-  // Registros de alteração de pontos (Elo) gerados por esta partida
+  //registros de alteração de pontos gerados por esta partida
   @OneToMany(mappedBy = "partida", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<HistoricoPontuacao> historicoPontuacao = new ArrayList<>();
 
-  // Transferências causadas por esta partida (ex: time perdedor saindo)
+  //transferências causadas por esta partida
   @OneToMany(mappedBy = "partidaGatilho", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<HistoricoTransferencia> historicoTransferencias = new ArrayList<>();
 }

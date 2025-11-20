@@ -27,20 +27,17 @@ public class HistoricoPontuacao {
   @Column(name = "pontos_depois", nullable = false)
   private Integer pontosDepois;
 
-  // Variação líquida (Elo + Bônus/Redutor de Desempenho)
   @Column(name = "variacao", nullable = false)
   private Integer variacao;
 
   @Column(name = "data_registro")
   private LocalDateTime dataRegistro = LocalDateTime.now();
 
-  // --- Relacionamentos ---
-
   @ManyToOne
   @JoinColumn(name = "jogador_id", nullable = false)
   private User jogador;
 
-  // A partida que causou a alteração na pontuação
+  //partida que causou a alteração na pontuação
   @ManyToOne
   @JoinColumn(name = "partida_id", nullable = false)
   private Partida partida;

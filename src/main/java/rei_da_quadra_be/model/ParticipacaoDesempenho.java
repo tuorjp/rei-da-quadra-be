@@ -13,6 +13,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ParticipacaoDesempenho {
+  /*
+  * tabela que registra quais foram os passes, gols e defesas de um jogador
+  * em determinada partida
+  */
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,8 +32,6 @@ public class ParticipacaoDesempenho {
   @Column(name = "defesas", nullable = false)
   private Integer defesas = 0;
 
-  // --- Relacionamentos ---
-
   @ManyToOne
   @JoinColumn(name = "partida_id", nullable = false)
   private Partida partida;
@@ -38,7 +40,7 @@ public class ParticipacaoDesempenho {
   @JoinColumn(name = "jogador_id", nullable = false)
   private User jogador;
 
-  // Armazena qual time o jogador defendia nesta partida específica
+  //qual time o jogador defendia nesta partida específica
   @ManyToOne
   @JoinColumn(name = "time_id_na_partida", nullable = false)
   private Time timeNaPartida;

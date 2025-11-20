@@ -27,11 +27,10 @@ public class Evento {
   @ManyToOne
   @JoinColumn(name = "usuario_id", nullable = false)
   @JsonBackReference
-  private User usuario;
+  private User usuario; //criador do evento
 
-  public String local;
-  @Column(columnDefinition = "TIMESTAMP")
-  public LocalDateTime dataHorario;
+  @Column(columnDefinition = "TIMESTAMP", name = "data_evento")
+  public LocalDateTime dataHorarioEvento;
 
   @Column(name = "nome", length = 150, nullable = false)
   private String nome;
@@ -39,41 +38,36 @@ public class Evento {
   @Column(name = "data_criacao", updatable = false)
   private LocalDateTime dataCriacao = LocalDateTime.now();
 
-  @Column(name = "data_evento")
-  private LocalDateTime dataEvento;
-
   @Column(name = "local_evento", length = 150)
   private String localEvento;
 
-  // Configurações definidas pelo usuário (Novas Regras)
   @Column(name = "jogadores_por_time")
-  private Integer jogadoresPorTime;
+  private Integer jogadoresPorTime; //quantidade de jogadores por time
 
   @Column(name = "total_partidas_definidas")
-  private Integer totalPartidasDefinidas;
+  private Integer totalPartidasDefinidas; //total de partidas no evento
 
-  // Estado do evento: 'ativo', 'concluido', 'cancelado'
   @Column(name = "status", length = 20, nullable = false)
   private String status = "ativo";
 
-  // Campos de personalização do evento
   @Column(name = "cor_primaria", length = 7)
   private String corPrimaria;
 
   @Column(name = "cor_secundaria", length = 7)
   private String corSecundaria;
 
-  // --- Relacionamentos (Listas inversas) ---
-
   @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
-  private List<Time> times = new ArrayList<>();
+  private List<Time> times = new ArrayList<>(); //times do evento
 
+  /* inscrições: nem todo inscrito começa em um time, ele pode ser reserva*/
   @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Inscricao> inscricoes = new ArrayList<>();
 
+  /*partidas realizadas e a realizar no evento*/
   @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<Partida> partidas = new ArrayList<>();
 
+  /*tabela de controle: onde um jogador estava e para onde foi*/
   @OneToMany(mappedBy = "evento", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<HistoricoTransferencia> historicoTransferencias = new ArrayList<>();
 }
