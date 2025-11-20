@@ -16,13 +16,14 @@ import rei_da_quadra_be.dto.AuthenticationDTO;
 import rei_da_quadra_be.dto.LoginResponseDTO;
 import rei_da_quadra_be.dto.UserProfileDTO;
 import rei_da_quadra_be.enums.UserRole;
-import rei_da_quadra_be.model.ConfirmationToken;
 import rei_da_quadra_be.model.User;
-import rei_da_quadra_be.repository.ConfirmationTokenRepository;
+import rei_da_quadra_be.model.ConfirmationToken;
 import rei_da_quadra_be.repository.UserRepository;
+import rei_da_quadra_be.repository.ConfirmationTokenRepository;
 import rei_da_quadra_be.security.TokenService;
 import rei_da_quadra_be.service.UserService;
 
+import java.io.UnsupportedEncodingException; // Import adicionado
 import java.time.LocalDateTime;
 
 @RestController
@@ -48,13 +49,23 @@ public class AuthenticationController {
   // Cadastro de novo usuário
   @PostMapping("/register")
   public ResponseEntity<String> registrar(@RequestBody User user) {
+    // Verifica se já existe usuário com o mesmo email
+    if (userRepository.findByEmail(user.getEmail()) != null) {
+      return ResponseEntity
+              .status(409)
+              .body("Já existe um cadastro com esse email.");
+    }
+
     try {
       userService.registrarUsuario(user);
-      return ResponseEntity.ok("Cadastro realizado com sucesso! Verifique seu email para confirmar.");
-    } catch (MessagingException e) {
+      return ResponseEntity.ok("Cadastro realizado com sucesso!");
+
+      // AQUI ESTÁ A CORREÇÃO: Captura ambas as exceções
+    } catch (MessagingException | UnsupportedEncodingException e) {
       return ResponseEntity.internalServerError().body("Erro ao enviar email: " + e.getMessage());
     }
   }
+
 
   // Confirmação de email
   @GetMapping("/confirm")
