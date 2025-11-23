@@ -22,9 +22,9 @@ import rei_da_quadra_be.repository.UserRepository;
 import rei_da_quadra_be.repository.ConfirmationTokenRepository;
 import rei_da_quadra_be.security.TokenService;
 import rei_da_quadra_be.service.UserService;
-
-import java.io.UnsupportedEncodingException; // Import adicionado
+import java.io.UnsupportedEncodingException;
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
@@ -120,6 +120,37 @@ public class AuthenticationController {
     loginResponseDTO.setToken(token);
 
     return ResponseEntity.ok(loginResponseDTO);
+  }
+
+  @PostMapping("/recover-password")
+  public ResponseEntity<String> recuperarSenha(@RequestBody Map<String, String> payload) {
+    String email = payload.get("email");
+
+    try {
+      userService.solicitarRecuperacaoSenha(email);
+      // Retornamos OK mesmo se o email não existir (para evitar enumeração de usuários)
+      return ResponseEntity.ok("Se o email estiver cadastrado, as instruções foram enviadas.");
+
+    } catch (MessagingException | UnsupportedEncodingException e) {
+      return ResponseEntity.internalServerError().body("Erro ao enviar email: " + e.getMessage());
+    }
+  }
+
+  @PostMapping("/reset-password")
+  public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> payload) {
+    String token = payload.get("token");
+    String newPassword = payload.get("password");
+
+    if (token == null || newPassword == null) {
+      return ResponseEntity.badRequest().body("Token e nova senha são obrigatórios.");
+    }
+
+    try {
+      userService.redefinirSenha(token, newPassword);
+      return ResponseEntity.ok("Senha alterada com sucesso.");
+    } catch (RuntimeException e) {
+      return ResponseEntity.badRequest().body(e.getMessage());
+    }
   }
 
   @GetMapping("/profile")
