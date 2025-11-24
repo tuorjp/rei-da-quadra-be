@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import rei_da_quadra_be.dto.AuthenticationDTO;
 import rei_da_quadra_be.dto.LoginResponseDTO;
 import rei_da_quadra_be.dto.UserProfileDTO;
+import rei_da_quadra_be.dto.UserUpdateDTO;
 import rei_da_quadra_be.enums.UserRole;
 import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.model.ConfirmationToken;
@@ -182,7 +183,38 @@ public class AuthenticationController {
     profile.setNome(user.getNome());
     profile.setEmail(user.getEmail());
     profile.setRole(UserRole.valueOf(user.getRole()));
+    profile.setDataCriacao(user.getDataCriacao());
 
     return ResponseEntity.ok(profile);
+  }
+  @PutMapping("/profile")
+  public ResponseEntity<UserProfileDTO> updateProfile(@RequestBody UserUpdateDTO data, Authentication authentication) {
+    User user = (User) authentication.getPrincipal();
+
+    // Verifica confirmação de senha se houver troca de senha
+    if (data.getSenha() != null && !data.getSenha().isBlank()) {
+      if (!data.getSenha().equals(data.getConfirmarSenha())) {
+        return ResponseEntity.badRequest().build(); // Ou mensagem de erro
+      }
+    }
+
+    User atualizado = userService.atualizarUsuario(user, data);
+
+    // Retorna DTO atualizado
+    UserProfileDTO profile = new UserProfileDTO();
+    profile.setId(atualizado.getId());
+    profile.setNome(atualizado.getNome());
+    profile.setEmail(atualizado.getEmail());
+    profile.setRole(UserRole.valueOf(atualizado.getRole()));
+    profile.setDataCriacao(atualizado.getDataCriacao());
+
+    return ResponseEntity.ok(profile);
+  }
+
+  @DeleteMapping("/profile")
+  public ResponseEntity<Void> deleteAccount(Authentication authentication) {
+    User user = (User) authentication.getPrincipal();
+    userService.deletarConta(user);
+    return ResponseEntity.noContent().build();
   }
 }

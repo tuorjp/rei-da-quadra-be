@@ -3,11 +3,13 @@ package rei_da_quadra_be.service;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import java.io.UnsupportedEncodingException;
+import java.util.Optional;
 
 import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import rei_da_quadra_be.dto.UserUpdateDTO;
 import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.model.ConfirmationToken;
 import rei_da_quadra_be.repository.UserRepository;
@@ -31,23 +33,38 @@ public class UserService {
 
   public void registrarUsuario(User user) throws MessagingException, UnsupportedEncodingException {
     user.setPassword(passwordEncoder.encode(user.getPassword()));
-    user.setEnabled(false); // usuário começa inativo
+    user.setEnabled(false);
+    user.setDataCriacao(LocalDateTime.now());
     userRepository.save(user);
 
-    // Gera token de confirmação
     String token = UUID.randomUUID().toString();
+    salvarOuAtualizarToken(user, token);
 
-    ConfirmationToken confirmationToken = new ConfirmationToken();
-    confirmationToken.setToken(token);
-    confirmationToken.setUser(user);
-    confirmationToken.setCreatedAt(LocalDateTime.now());
-    confirmationToken.setExpiresAt(LocalDateTime.now().plusHours(24));
-
-    tokenRepository.save(confirmationToken);
-
-    // Envia email de confirmação
     emailService.enviarEmailConfirmacao(user, token);
   }
+
+  public User atualizarUsuario(User userAtual, UserUpdateDTO dados) {
+    // Atualiza nome
+    if (dados.getNome() != null && !dados.getNome().isBlank()) {
+      userAtual.setNome(dados.getNome());
+    }
+
+    // Atualiza senha se fornecida
+    if (dados.getSenha() != null && !dados.getSenha().isBlank()) {
+      userAtual.setPassword(passwordEncoder.encode(dados.getSenha()));
+    }
+
+    return userRepository.save(userAtual);
+  }
+
+  public void deletarConta(User user) {
+    // Primeiro remove tokens associados para evitar erro de FK
+    tokenRepository.findByUser(user).ifPresent(token -> tokenRepository.delete(token));
+
+    // Remove o usuário
+    userRepository.delete(user);
+  }
+
   public void solicitarRecuperacaoSenha(String email) throws MessagingException, UnsupportedEncodingException {
     UserDetails userDetails = userRepository.findByEmail(email);
 
