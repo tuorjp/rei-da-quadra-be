@@ -184,6 +184,7 @@ public class AuthenticationController {
     profile.setEmail(user.getEmail());
     profile.setRole(UserRole.valueOf(user.getRole()));
     profile.setDataCriacao(user.getDataCriacao());
+    profile.setFotoPerfil(user.getFotoPerfil());
 
     return ResponseEntity.ok(profile);
   }
@@ -207,6 +208,7 @@ public class AuthenticationController {
     profile.setEmail(atualizado.getEmail());
     profile.setRole(UserRole.valueOf(atualizado.getRole()));
     profile.setDataCriacao(atualizado.getDataCriacao());
+    profile.setFotoPerfil(atualizado.getFotoPerfil());
 
     return ResponseEntity.ok(profile);
   }

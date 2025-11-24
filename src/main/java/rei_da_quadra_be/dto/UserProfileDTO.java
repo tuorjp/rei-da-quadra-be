@@ -13,4 +13,5 @@ public class UserProfileDTO {
   private String email;
   private UserRole role;
   private LocalDateTime dataCriacao;
+  private String fotoPerfil;
 }

@@ -54,6 +54,12 @@ public class UserService {
       userAtual.setPassword(passwordEncoder.encode(dados.getSenha()));
     }
 
+    // Se vier uma string, salva. Se vier null, mantém.
+    // Se quiser permitir remover, o front deve mandar uma string vazia "" e aqui tratamos.
+    if (dados.getFotoPerfil() != null) {
+      userAtual.setFotoPerfil(dados.getFotoPerfil());
+    }
+
     return userRepository.save(userAtual);
   }
 

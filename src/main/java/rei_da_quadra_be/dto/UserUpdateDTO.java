@@ -9,4 +9,5 @@ public class UserUpdateDTO {
     private String nome;
     private String senha;
     private String confirmarSenha;
+    private String fotoPerfil;
 }
