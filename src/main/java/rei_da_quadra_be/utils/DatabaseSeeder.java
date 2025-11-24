@@ -191,6 +191,7 @@ public class DatabaseSeeder {
     u.setEnabled(true);
     u.setPontosHabilidade(elo);
     u.setNivelHabilidade(nivel);
+    u.setDataCriacao(LocalDateTime.now());
     return userRepository.save(u);
   }
 

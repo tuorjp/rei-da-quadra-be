@@ -33,13 +33,15 @@ public class SecurityConfigurations {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        // 🔓 Rotas públicas
+                        // Rotas públicas
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                         .requestMatchers(HttpMethod.GET, "/auth/confirm").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/recover-password").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/reset-password").permitAll()
 
-                        // 🔐 Qualquer outra precisa token
+                        // Qualquer outra precisa token
                         .anyRequest().authenticated()
                 )
 

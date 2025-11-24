@@ -7,6 +7,7 @@ import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import rei_da_quadra_be.enums.NivelHabilidade;
 
+import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 
@@ -34,6 +35,12 @@ public class User implements UserDetails {
 
   @Column(nullable = false)
   private boolean enabled = false; //começa desativado até confirmar o email
+
+  @Column(name = "data_criacao", nullable = false, updatable = false)
+  private LocalDateTime dataCriacao;
+
+  @Column(name = "foto_perfil", columnDefinition = "TEXT")
+  private String fotoPerfil;
 
   @Column(name = "pontos_habilidade", nullable = false)
   private Integer pontosHabilidade = 1000;

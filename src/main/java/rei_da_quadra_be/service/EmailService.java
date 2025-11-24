@@ -81,4 +81,57 @@ public class EmailService {
 
         mailSender.send(message);
     }
+    public void enviarEmailRecuperacao(User user, String token) throws MessagingException, UnsupportedEncodingException {
+        String assunto = "Redefinição de Senha - Rei da Quadra Club";
+        // Link aponta para a futura tela onde a pessoa digita a nova senha
+        String linkRecuperacao = "http://localhost:4200/reset-password?token=" + token;
+        String logoUrl = "https://i.imgur.com/xX9K3yG.png";
+
+        String corpo = """
+            <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 35px;">
+                <div style="max-width: 650px; margin: auto; background: #ffffff; 
+                            border-radius: 12px; padding: 35px; box-shadow: 0 4px 12px rgba(0,0,0,0.10);">
+
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <img src='%s' alt='Rei da Quadra Club' 
+                             style='max-width: 180px; width: 100%%; height: auto;' />
+                    </div>
+
+                    <h2 style="color: #283040; text-align: left; font-size: 22px;">
+                        Olá, <strong>%s</strong>.
+                    </h2>
+
+                    <p style="font-size: 16px; color: #444; line-height: 1.6;">
+                        Recebemos uma solicitação para redefinir sua senha.<br>
+                        Clique no botão abaixo para criar uma nova senha:
+                    </p>
+
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="%s" 
+                           style="background-color: #d32f2f; color: white; text-decoration: none; 
+                                  padding: 15px 35px; border-radius: 6px; 
+                                  font-weight: bold; font-size: 16px; display: inline-block;">
+                           Redefinir Minha Senha
+                        </a>
+                    </div>
+
+                    <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+
+                    <p style="font-size: 14px; color: #666; line-height: 1.6;">
+                        Se você não solicitou redefinição de senha, ignore este e-mail. Sua senha permanecerá a mesma.
+                    </p>
+                </div>
+            </div>
+            """.formatted(logoUrl, user.getNome(), linkRecuperacao);
+
+        MimeMessage message = mailSender.createMimeMessage();
+        MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+
+        helper.setFrom(remetente, "Rei da Quadra Club"); //Pra mostrar o nome personalizado do remetente
+        helper.setTo(user.getEmail());
+        helper.setSubject(assunto);
+        helper.setText(corpo, true);
+
+        mailSender.send(message);
+    }
 }
