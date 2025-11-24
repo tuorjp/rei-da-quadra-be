@@ -261,4 +261,14 @@ public class AdmTimesService {
     i.setPartidasJogadas(i.getPartidasJogadas() + 1);
     inscricaoRepository.save(i);
   }
+
+  public boolean jogadorEstaNoTime(Long eventoId, Long timeId, Long jogadorId) {
+    return inscricaoRepository.findByEventoId(eventoId)
+      .stream()
+      .anyMatch(i ->
+        i.getJogador().getId().equals(jogadorId) &&
+          i.getTimeAtual() != null &&
+          i.getTimeAtual().getId().equals(timeId)
+      );
+  }
 }

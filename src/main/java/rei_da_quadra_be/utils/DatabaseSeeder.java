@@ -8,11 +8,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import rei_da_quadra_be.enums.NivelHabilidade;
 import rei_da_quadra_be.enums.StatusEvento;
-import rei_da_quadra_be.enums.StatusPartida;
 import rei_da_quadra_be.enums.TipoAcaoEmJogo;
 import rei_da_quadra_be.model.*;
 import rei_da_quadra_be.repository.*;
 import rei_da_quadra_be.service.AdmTimesService;
+import rei_da_quadra_be.service.EventoService;
+import rei_da_quadra_be.service.PartidaService;
+import rei_da_quadra_be.service.TimeService;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -21,55 +23,62 @@ import java.util.*;
 @RequiredArgsConstructor
 public class DatabaseSeeder {
 
+  //repositories
   private final UserRepository userRepository;
   private final EventoRepository eventoRepository;
   private final InscricaoRepository inscricaoRepository;
   private final TimeRepository timeRepository;
   private final PartidaRepository partidaRepository;
-  private final AdmTimesService admTimesService;
   private final PasswordEncoder passwordEncoder;
+
+  //services
+  private final EventoService eventoService;
+  private final PartidaService partidaService;
+  private final TimeService timeService;
+  private final AdmTimesService admTimesService;
 
   @Bean
   public CommandLineRunner seedDatabase() {
     return args -> {
-      System.out.println("=== Iniciando Seeding Completo do Banco de Dados ===");
+      System.out.println("===Iniciando seeding===");
 
       limparBanco();
+
+      // 1. Criar Usuários
       User userAdm = criarUser("ADMIN", "admin@gmail.com", 5000, NivelHabilidade.CRAQUE);
-
-      //cria usuários para torneio
       List<User> users = criarMuitosUsuarios();
-      System.out.println(users.size() + " usuários criados.");
 
-      //cria evento
-      Evento evento = criarEvento(userAdm);
-      System.out.println("Evento criado: " + evento.getNome());
+      // 2. Criar Evento via Service
+      Evento evento = criarEventoViaService(userAdm);
+      System.out.println("Evento criado via Service: " + evento.getNome());
 
-      //inscreve todos os usuários
+      // 3. Inscrever Usuários
       users.forEach(user -> inscreverUsuario(user, evento));
       System.out.println("Usuários inscritos.");
 
-      //montar Times (Service)
+      // 4. Montar Times via Service
       System.out.println("Executando algoritmo de distribuição de times...");
       admTimesService.montarTimesInicial(evento.getId());
+      System.out.println("Times montados e balanceados.");
 
-      //simula torneio (partidas, gols e rodízio)
-      System.out.println("=== Iniciando Simulação de Torneio (10 Partidas) ===");
-      simularTorneioCompleto(evento);
+      // 5. Simular Torneio usando PartidaService
+      System.out.println("===Iniciando Simulação de Partidas via Services===");
+      simularTorneioComServices(evento);
 
-      System.out.println("=== Seeding Concluído com Sucesso! ===");
+      System.out.println("===Seeding concluído===");
     };
   }
 
   @Transactional
-  public void simularTorneioCompleto(Evento evento) {
-    List<Time> times = timeRepository.findByEventoId(evento.getId());
+  public void simularTorneioComServices(Evento evento) {
+    //usa o TimeService para buscar os times do evento criado
+    List<Time> times = timeService.listarTimesDoEvento(evento.getId());
 
-    //filtra times jogáveis (exclui o time de espera "reserva")
+    //filtra times jogáveis (exclui o time de espera)
     List<Time> timesJogaveis = new ArrayList<>(
       times.stream()
-      .filter(t -> !t.getTimeDeEspera())
-      .toList()
+        .filter(t -> !t.getTimeDeEspera())
+        .toList()
     );
 
     if (timesJogaveis.size() < 2) {
@@ -78,109 +87,117 @@ public class DatabaseSeeder {
     }
 
     //fila de desafiantes
-    //o primeiro da lista é o rei da quadra atual, o segundo é o desafiante.
-    //os outros esperam na fila.
     Queue<Time> filaDeTimes = new LinkedList<>(timesJogaveis);
 
-    Time timeRei = filaDeTimes.poll(); //começa como rei (Time 1)
+    /*
+     * O primeiro rei da quadra vai ser um time aleatório,
+     * por que não tem pontuação do evento ainda
+     */
+    Time timeRei = filaDeTimes.poll();
 
     Random random = new Random();
     int totalPartidasASimular = 10;
 
     for (int i = 1; i <= totalPartidasASimular; i++) {
-      if(filaDeTimes.isEmpty()) break;
+      if (filaDeTimes.isEmpty()) break;
 
-      Time timeDesafiante = filaDeTimes.poll(); //próximo da fila (Time 2, depois 3, etc)
+      Time timeDesafiante = filaDeTimes.poll();
 
-      System.out.println("\n--- Simulando Partida " + i + ": " + timeRei.getNome() + " vs " + timeDesafiante.getNome() + " ---");
+      System.out.println("\n---Partida " + i + ": " + timeRei.getNome() + " vs " + timeDesafiante.getNome() + "---");
 
-      //define placar aleatório
-      int golsRei = random.nextInt(5); //0 a 4 gols
+      // 1. Criar Partida (Service)
+      Partida partida = partidaService.criarPartida(evento.getId(), timeRei.getId(), timeDesafiante.getId());
+
+      // 2. Iniciar Partida (Service)
+      partidaService.iniciarPartida(partida.getId());
+
+      //define quantos gols cada um vai fazer no loop
+      int golsRei = random.nextInt(5);
       int golsDesafiante = random.nextInt(5);
+      if (golsRei == golsDesafiante) golsRei++; //evitar empate na simulação
 
-      //evita empate para forçar rodízio (regra simplificada)
-      if (golsRei == golsDesafiante) golsRei++;
+      // 3. Simular Ações de Jogo (Gols/Assistências) via Service
+      //teste do registro de desempenho e cálculo de elo em tempo real
+      simularGolsViaService(partida, timeRei, golsRei);
+      simularGolsViaService(partida, timeDesafiante, golsDesafiante);
 
-      //cria a partida
-      Partida partida = new Partida();
-      partida.setEvento(evento);
-      partida.setTimeA(timeRei);
-      partida.setTimeB(timeDesafiante);
-      partida.setTimeAPlacar(golsRei);
-      partida.setTimeBPlacar(golsDesafiante);
-      partida.setStatus(StatusPartida.JOGADA); //já nasce finalizada na simulação
-      partida = partidaRepository.save(partida);
+      // 4. Finalizar Partida (Service)
+      //o Service vai calcular o vencedor, atualizar status e chamar o RODÍZIO automaticamente
+      Partida partidaFinalizada = partidaService.finalizarPartida(partida.getId());
 
-      //simula gols e assistências (para subir elo dos jogadores)
-      simularAcoesDeJogo(partida, timeRei, golsRei);
-      simularAcoesDeJogo(partida, timeDesafiante, golsDesafiante);
+      //verificar quem ganhou
+      boolean reiGanhou = partidaFinalizada.getTimeAPlacar() > partidaFinalizada.getTimeBPlacar();
+      Time vencedor = reiGanhou ? timeRei : timeDesafiante;
+      Time perdedor = reiGanhou ? timeDesafiante : timeRei;
 
-      //define vencedor
-      Time vencedor = (golsRei > golsDesafiante) ? timeRei : timeDesafiante;
-      Time perdedor = (golsRei > golsDesafiante) ? timeDesafiante : timeRei;
+      System.out.println("Placar Final: " + partidaFinalizada.getTimeAPlacar() + " x " + partidaFinalizada.getTimeBPlacar());
+      System.out.println("Vencedor: " + vencedor.getNome());
+      System.out.println("Rodízio automático aplicado pelo Service ao time: " + perdedor.getNome());
 
-      System.out.println("Placar: " + golsRei + " x " + golsDesafiante + ". Vencedor: " + vencedor.getNome());
-
-      //processa o Rodízio (Serviço Principal)
-      //o serviço vai pegar o perdedor, tirar gente e colocar reservas
-      admTimesService.processarFimDePartida(partida.getId(), vencedor.getId());
-
-      System.out.println("Rodízio aplicado ao time: " + perdedor.getNome());
-
-      //lógica da Fila para a próxima partida:
-      //vencedor continua como Rei.
-      //perdedor vai para o final da fila de espera.
+      //lógica da fila:
+      //rei continua, perdedor vai para o fim da fila
       timeRei = vencedor;
       filaDeTimes.offer(perdedor);
     }
+
+    // Finalizar Evento
+    eventoService.finalizarEvento(evento.getId(), evento.getUsuario());
+    System.out.println("✅ Evento finalizado.");
   }
 
-  private void simularAcoesDeJogo(Partida partida, Time time, int totalGols) {
+  private void simularGolsViaService(Partida partida, Time time, int totalGols) {
     List<Inscricao> jogadoresDoTime = inscricaoRepository.findByTimeAtualAndEvento(time, partida.getEvento());
 
-    if(jogadoresDoTime.isEmpty()) return;
+    if (jogadoresDoTime.isEmpty()) return;
 
     Random random = new Random();
 
-    //para cada gol, escolhe um autor aleatório do time
     for (int k = 0; k < totalGols; k++) {
+      // Escolhe quem fez o gol
       User autorGol = jogadoresDoTime.get(random.nextInt(jogadoresDoTime.size())).getJogador();
 
-      //chama o serviço para computar elo
-      admTimesService.computarAcaoJogador(autorGol.getId(), TipoAcaoEmJogo.GOL);
+      // CHAMA O SERVICE: Isso valida se a regra de negócio permite o gol e atualiza placar/elo
+      partidaService.registrarAcao(partida.getId(), autorGol.getId(), TipoAcaoEmJogo.GOL);
 
-      //50% de chance de ter assistência
+      // Assistência (50% chance)
       if (random.nextBoolean()) {
         User autorAssistencia = jogadoresDoTime.get(random.nextInt(jogadoresDoTime.size())).getJogador();
-        if(!autorAssistencia.getId().equals(autorGol.getId())) {
-          admTimesService.computarAcaoJogador(autorAssistencia.getId(), TipoAcaoEmJogo.ASSISTENCIA);
+        if (!autorAssistencia.getId().equals(autorGol.getId())) {
+          partidaService.registrarAcao(partida.getId(), autorAssistencia.getId(), TipoAcaoEmJogo.ASSISTENCIA);
         }
       }
     }
   }
 
-  private List<User> criarMuitosUsuarios() {
-    List<User> lista = new ArrayList<>();
+  // --- Métodos de Criação de Dados de uso local ---
 
-    //5 craques
-    for (int i = 1; i <= 5; i++) {
-      lista.add(criarUser("Craque " + i, "craque" + i + "@teste.com", 1500 + (i*10), NivelHabilidade.CRAQUE));
-    }
+  private Evento criarEventoViaService(User organizador) {
+    Evento e = new Evento();
+    e.setNome("Copa Services Integration");
+    e.setLocalEvento("Arena Teste");
+    e.setDataHorarioEvento(LocalDateTime.now().plusDays(1));
+    e.setJogadoresPorTime(5);
+    e.setTotalPartidasDefinidas(15);
+    e.setCorPrimaria("#0000FF");
+    e.setCorSecundaria("#FFFFFF");
+    e.setStatus(StatusEvento.ATIVO);
 
-    //15 medianos
-    for (int i = 1; i <= 15; i++) {
-      lista.add(criarUser("Mediano " + i, "mediano" + i + "@teste.com", 1000 + (i * 10), NivelHabilidade.MEDIANO));
-    }
-
-    //5 pernas de pau
-    for (int i = 1; i <= 5; i++) {
-      lista.add(criarUser("Perna " + i, "perna" + i + "@teste.com", 800 + (i * 5), NivelHabilidade.PERNA_DE_PAU));
-    }
-
-    return lista;
+    return eventoService.salvarEvento(e, organizador);
   }
 
-  //métodos auxiliares
+  private List<User> criarMuitosUsuarios() {
+    List<User> lista = new ArrayList<>();
+    // 5 Craques
+    for (int i = 1; i <= 5; i++)
+      lista.add(criarUser("Craque " + i, "craque" + i + "@teste.com", 2500, NivelHabilidade.CRAQUE));
+    // 15 Medianos
+    for (int i = 1; i <= 15; i++)
+      lista.add(criarUser("Mediano " + i, "mediano" + i + "@teste.com", 1500, NivelHabilidade.MEDIANO));
+    // 5 Pernas
+    for (int i = 1; i <= 5; i++)
+      lista.add(criarUser("Perna " + i, "perna" + i + "@teste.com", 800, NivelHabilidade.PERNA_DE_PAU));
+    return lista;
+  }
 
   private User criarUser(String nome, String email, Integer elo, NivelHabilidade nivel) {
     User u = new User();
@@ -195,20 +212,6 @@ public class DatabaseSeeder {
     return userRepository.save(u);
   }
 
-  private Evento criarEvento(User organizador) {
-    Evento e = new Evento();
-    e.setUsuario(organizador);
-    e.setNome("Copa Seeder");
-    e.setLocalEvento("Arena Seeder");
-    e.setDataHorarioEvento(LocalDateTime.now().plusDays(2));
-    e.setJogadoresPorTime(5);
-    e.setTotalPartidasDefinidas(15);
-    e.setCorPrimaria("#FF0000");
-    e.setCorSecundaria("#00FF00");
-    e.setStatus(StatusEvento.ATIVO);
-    return eventoRepository.save(e);
-  }
-
   private void inscreverUsuario(User user, Evento evento) {
     Inscricao i = new Inscricao();
     i.setEvento(evento);
@@ -218,7 +221,7 @@ public class DatabaseSeeder {
   }
 
   private void limparBanco() {
-    partidaRepository.deleteAll();
+    partidaRepository.deleteAll(); //partidas primeiro
     inscricaoRepository.deleteAll();
     timeRepository.deleteAll();
     eventoRepository.deleteAll();
