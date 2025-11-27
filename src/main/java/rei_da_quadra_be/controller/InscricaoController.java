@@ -12,13 +12,16 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import rei_da_quadra_be.dto.InscricaoRequestDTO;
 import rei_da_quadra_be.dto.InscricaoResponseDTO;
 import rei_da_quadra_be.model.User;
+import rei_da_quadra_be.service.AuthorizationService;
 import rei_da_quadra_be.service.InscricaoService;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/eventos/{eventoId}/inscricoes")
@@ -27,7 +30,8 @@ import java.util.List;
 public class InscricaoController {
     
     private final InscricaoService inscricaoService;
-    
+    private final AuthorizationService authorizationService;
+
     @GetMapping
     @Operation(summary = "Lista todas as inscrições de um evento")
     @ApiResponses(value = {
@@ -97,5 +101,18 @@ public class InscricaoController {
     ) {
         InscricaoResponseDTO inscricao = inscricaoService.buscarInscricao(eventoId, inscricaoId, user);
         return ResponseEntity.ok(inscricao);
+    }
+
+    @DeleteMapping("/delete")
+    @Operation(summary = "Deleta inscrição específica")
+    public ResponseEntity<Map<String, String>> deletarInscricao(
+      @PathVariable Long eventoId,
+      @RequestParam("i") Long inscricaoId,
+      @AuthenticationPrincipal UserDetails userDetails
+      ) {
+      User user = (User) this.authorizationService.loadUserByUsername(userDetails.getUsername());
+      System.out.println("REQ CHEGOU");
+      this.inscricaoService.removerInscricao(eventoId, inscricaoId, user);
+      return ResponseEntity.ok().body(Map.of("message", "Inscrição deletada"));
     }
 }

@@ -77,7 +77,8 @@ public class InscricaoService {
     
     @Transactional
     public void removerInscricao(Long eventoId, Long inscricaoId, User currentUser) {
-        Evento evento = eventoRepository.findById(eventoId)
+        Evento evento = eventoRepository
+            .findById(eventoId)
             .orElseThrow(() -> new EventoNaoEncontradoException("Evento não encontrado"));
         
         if (!evento.getUsuario().getId().equals(currentUser.getId())) {
