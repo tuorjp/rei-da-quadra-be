@@ -185,6 +185,8 @@ public class AuthenticationController {
     profile.setRole(UserRole.valueOf(user.getRole()));
     profile.setDataCriacao(user.getDataCriacao());
     profile.setFotoPerfil(user.getFotoPerfil());
+    profile.setPontosHabilidade(user.getPontosHabilidade());
+    profile.setNivelHabilidade(user.getNivelHabilidade());
 
     return ResponseEntity.ok(profile);
   }
