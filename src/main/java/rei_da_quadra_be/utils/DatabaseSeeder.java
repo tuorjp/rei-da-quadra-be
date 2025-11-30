@@ -17,6 +17,8 @@ import rei_da_quadra_be.service.PartidaService;
 import rei_da_quadra_be.service.TimeService;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 
 @Configuration
@@ -175,7 +177,7 @@ public class DatabaseSeeder {
     Evento e = new Evento();
     e.setNome("Copa Services Integration");
     e.setLocalEvento("Arena Teste");
-    e.setDataHorarioEvento(LocalDateTime.now().plusDays(1));
+    e.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1));
     e.setJogadoresPorTime(5);
     e.setTotalPartidasDefinidas(15);
     e.setCorPrimaria("#0000FF");
