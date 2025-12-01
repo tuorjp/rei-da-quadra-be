@@ -1,11 +1,13 @@
 package rei_da_quadra_be.service;
 
-import io.swagger.v3.core.util.ReflectionUtils;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import rei_da_quadra_be.enums.StatusEvento;
 import rei_da_quadra_be.model.Evento;
 import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.repository.EventoRepository;
+import rei_da_quadra_be.service.exception.EventoNaoEncontradoException;
 
 import java.lang.reflect.Field;
 import java.time.LocalDateTime;
@@ -41,6 +43,19 @@ public class EventoService {
     }
 
     eventoRepository.delete(evento);
+  }
+
+  @Transactional
+  public void finalizarEvento(Long id, User usuario) {
+    Evento evento = eventoRepository.findById(id)
+      .orElseThrow(() -> new EventoNaoEncontradoException("Evento não encontrado"));
+
+    if (!evento.getUsuario().getId().equals(usuario.getId())) {
+      throw new SecurityException("Acesso negado: evento não pertence ao usuário.");
+    }
+
+    evento.setStatus(StatusEvento.FINALIZADO);
+    eventoRepository.save(evento);
   }
 
   public Evento atualizaEventoParcial(Long id, Map<String, Object> fields, User usuario) {

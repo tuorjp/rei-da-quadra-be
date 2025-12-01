@@ -1,13 +1,18 @@
 package rei_da_quadra_be.model;
 
 import jakarta.persistence.*;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
+import lombok.Getter;
+import lombok.Setter;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+import rei_da_quadra_be.enums.NivelHabilidade;
 
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
+
+@Getter
+@Setter
 @Entity
 @Table(name = "users")
 public class User implements UserDetails {
@@ -26,10 +31,34 @@ public class User implements UserDetails {
   private String password;
 
   @Column(nullable = false)
-  private String role = "USER"; // ou "ROLE_USER" dependendo do seu padrão
+  private String role = "USER";
 
   @Column(nullable = false)
-  private boolean enabled = false; // começa desativado até confirmar o email
+  private boolean enabled = false; //começa desativado até confirmar o email
+
+  @Column(name = "data_criacao", nullable = false, updatable = false)
+  private LocalDateTime dataCriacao;
+
+  @Column(name = "foto_perfil", columnDefinition = "TEXT")
+  private String fotoPerfil;
+
+  @Column(name = "pontos_habilidade", nullable = false)
+  private Integer pontosHabilidade = 1000;
+
+  @Column(name = "nivel_habilidade", nullable = false)
+  private NivelHabilidade nivelHabilidade = NivelHabilidade.MEDIANO;
+
+  @OneToMany(mappedBy = "jogador")
+  private List<Inscricao> inscricoes;
+
+  @OneToMany(mappedBy = "jogador")
+  private List<ParticipacaoDesempenho> desempenhos;
+
+  @OneToMany(mappedBy = "jogador")
+  private List<HistoricoPontuacao> historicoPontuacao;
+
+  @OneToMany(mappedBy = "jogador")
+  private List<HistoricoTransferencia> historicoTransferencia;
 
   // --- Construtores ---
   public User() {}
@@ -42,63 +71,13 @@ public class User implements UserDetails {
     this.enabled = false;
   }
 
-  // --- Getters e Setters ---
-  public Long getId() {
-    return id;
-  }
-
-  public void setId(Long id) {
-    this.id = id;
-  }
-
-  public String getNome() {
-    return nome;
-  }
-
-  public void setNome(String nome) {
-    this.nome = nome;
-  }
-
-  public String getEmail() {
-    return email;
-  }
-
-  public void setEmail(String email) {
-    this.email = email;
-  }
-
-  public String getPassword() {
-    return password;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
-  }
-
-  public String getRole() {
-    return role;
-  }
-
-  public void setRole(String role) {
-    this.role = role;
-  }
-
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
   // Metodos exigidos por UserDetails (Spring Security)
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
       return List.of(() -> "ROLE_USER");
   }
 
-
-    @Override
+  @Override
   public String getUsername() {
     return this.email; // o login é feito pelo email
   }

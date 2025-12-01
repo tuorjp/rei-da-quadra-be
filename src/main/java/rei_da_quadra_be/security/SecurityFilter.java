@@ -32,7 +32,9 @@ public class SecurityFilter extends OncePerRequestFilter {
         // Ignora rotas públicas (sem exigir token)
         if (path.equals("/auth/login")
                 || path.equals("/auth/register")
-                || path.equals("/auth/confirm")) {
+                || path.equals("/auth/confirm")
+                || path.equals("/auth/recover-password")
+                || path.equals("/auth/reset-password")) {
 
             filterChain.doFilter(request, response);
             return;
