@@ -127,13 +127,15 @@ public class EventoController {
     }
   }
     @GetMapping("/proximos")
-    @Operation(summary = "Lista 20 eventos próximos (20km) nos próximos 7 dias")
+    @Operation(summary = "Lista eventos próximos baseados na localização e data")
     public ResponseEntity<List<EventoResponseDTO>> listarEventosProximos(
             @RequestParam("lat") Double latitude,
             @RequestParam("lon") Double longitude,
+            @RequestParam(value = "limit", defaultValue = "20") int limit,
             @AuthenticationPrincipal User usuario
     ) {
-        List<Evento> eventos = eventoService.buscarEventosProximos(latitude, longitude);
+        // Passa o limite para o service
+        List<Evento> eventos = eventoService.buscarEventosProximos(latitude, longitude, limit);
 
         List<EventoResponseDTO> dtos = eventos.stream().map(evento -> {
             EventoResponseDTO dto = EventoResponseDTO.fromEvento(evento);

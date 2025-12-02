@@ -36,13 +36,13 @@ public class EventoService {
      * Busca eventos próximos (Raio 20km) que ocorrerão nos próximos 7 dias.
      * Filtra apenas eventos com status ATIVO.
      */
-    public List<Evento> buscarEventosProximos(Double lat, Double lon) {
+    public List<Evento> buscarEventosProximos(Double lat, Double lon, int limitSize) {
         OffsetDateTime agora = OffsetDateTime.now();
-        OffsetDateTime limiteSeteDias = agora.plusDays(7);
+        OffsetDateTime limiteData = agora.plusDays(10);
 
-        // Limita a 20 resultados
-        PageRequest limit = PageRequest.of(0, 20);
-        Double raio = 20.0; // 20km
+        // Usa o limite dinâmico recebido do Controller
+        PageRequest limit = PageRequest.of(0, limitSize);
+        Double raio = 20.0; //20km
 
         return eventoRepository.buscarEventosProximos(
                 lat,
@@ -50,7 +50,7 @@ public class EventoService {
                 raio,
                 StatusEvento.ATIVO,
                 agora,
-                limiteSeteDias,
+                limiteData,
                 limit
         );
     }
