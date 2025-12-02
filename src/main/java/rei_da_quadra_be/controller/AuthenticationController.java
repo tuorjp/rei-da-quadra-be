@@ -21,6 +21,8 @@ import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.model.ConfirmationToken;
 import rei_da_quadra_be.repository.UserRepository;
 import rei_da_quadra_be.repository.ConfirmationTokenRepository;
+import rei_da_quadra_be.repository.InscricaoRepository;
+import rei_da_quadra_be.repository.PartidaRepository;
 import rei_da_quadra_be.security.TokenService;
 import rei_da_quadra_be.service.UserService;
 import java.io.UnsupportedEncodingException;
@@ -32,191 +34,205 @@ import java.util.Map;
 @CrossOrigin(origins = "http://localhost:4200")
 public class AuthenticationController {
 
-  @Autowired
-  private UserService userService;
+    @Autowired
+    private UserService userService;
 
-  @Autowired
-  private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-  @Autowired
-  private ConfirmationTokenRepository tokenRepository;
+    @Autowired
+    private ConfirmationTokenRepository tokenRepository;
 
-  @Autowired
-  private AuthenticationManager authenticationManager;
+    @Autowired
+    private InscricaoRepository inscricaoRepository;
 
-  @Autowired
-  private TokenService tokenService;
+    @Autowired
+    private PartidaRepository partidaRepository;
 
-  // Cadastro de novo usuário
-  @PostMapping("/register")
-  public ResponseEntity<String> registrar(@RequestBody User user) {
-    // Verifica se já existe usuário com o mesmo email
-    if (userRepository.findByEmail(user.getEmail()) != null) {
-      return ResponseEntity
-              .status(409)
-              .body("Já existe um cadastro com esse email.");
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private TokenService tokenService;
+
+    // Cadastro de novo usuário
+    @PostMapping("/register")
+    public ResponseEntity<String> registrar(@RequestBody User user) {
+        // Verifica se já existe usuário com o mesmo email
+        if (userRepository.findByEmail(user.getEmail()) != null) {
+            return ResponseEntity
+                    .status(409)
+                    .body("Já existe um cadastro com esse email.");
+        }
+
+        try {
+            userService.registrarUsuario(user);
+            return ResponseEntity.ok("Cadastro realizado com sucesso!");
+
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            return ResponseEntity.internalServerError().body("Erro ao enviar email: " + e.getMessage());
+        }
     }
 
-    try {
-      userService.registrarUsuario(user);
-      return ResponseEntity.ok("Cadastro realizado com sucesso!");
 
-      // AQUI ESTÁ A CORREÇÃO: Captura ambas as exceções
-    } catch (MessagingException | UnsupportedEncodingException e) {
-      return ResponseEntity.internalServerError().body("Erro ao enviar email: " + e.getMessage());
-    }
-  }
+    // Confirmação de email
+    @GetMapping("/confirm")
+    public ResponseEntity<String> confirmarEmail(@RequestParam("token") String token) {
+        ConfirmationToken confToken = tokenRepository.findByToken(token)
+                .orElse(null);
 
+        if (confToken == null) {
+            return ResponseEntity.badRequest().body("Token inválido.");
+        }
 
-  // Confirmação de email
-  @GetMapping("/confirm")
-  public ResponseEntity<String> confirmarEmail(@RequestParam("token") String token) {
-    ConfirmationToken confToken = tokenRepository.findByToken(token)
-            .orElse(null);
+        if (confToken.getExpiresAt().isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Token expirado. Faça um novo cadastro.");
+        }
 
-    if (confToken == null) {
-      return ResponseEntity.badRequest().body("Token inválido.");
-    }
+        User user = confToken.getUser();
+        user.setEnabled(true);
+        userRepository.save(user);
 
-    if (confToken.getExpiresAt().isBefore(LocalDateTime.now())) {
-      return ResponseEntity.badRequest().body("Token expirado. Faça um novo cadastro.");
+        return ResponseEntity.ok("Email confirmado com sucesso!");
     }
 
-    User user = confToken.getUser();
-    user.setEnabled(true);
-    userRepository.save(user);
+    @PostMapping("/login")
+    @Operation(summary = "Autentica um usuário e retorna um token JWT")
+    @ApiResponses(
+            value = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Login bem-sucedido",
+                            content = {
+                                    @Content(
+                                            mediaType = "application/json",
+                                            schema = @Schema(implementation = LoginResponseDTO.class)
+                                    )
+                            }
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "Credenciais inválidas",
+                            content = @Content // Resposta de erro sem corpo
+                    )
+            }
+    )
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody AuthenticationDTO data) {
+        var usernamePassword = new UsernamePasswordAuthenticationToken(data.email, data.password);
 
-    return ResponseEntity.ok("Email confirmado com sucesso!");
-  }
+        var auth = this.authenticationManager.authenticate(usernamePassword);
 
-  @PostMapping("/login")
-  @Operation(summary = "Autentica um usuário e retorna um token JWT")
-  @ApiResponses(
-          value = {
-                  @ApiResponse(
-                          responseCode = "200",
-                          description = "Login bem-sucedido",
-                          content = {
-                                  @Content(
-                                          mediaType = "application/json",
-                                          schema = @Schema(implementation = LoginResponseDTO.class)
-                                  )
-                          }
-                  ),
-                  @ApiResponse(
-                          responseCode = "403",
-                          description = "Credenciais inválidas",
-                          content = @Content // Resposta de erro sem corpo
-                  )
-          }
-  )
-  public ResponseEntity<LoginResponseDTO> login(@RequestBody AuthenticationDTO data) {
-    var usernamePassword = new UsernamePasswordAuthenticationToken(data.email, data.password);
+        var token = tokenService.generateToken((User) auth.getPrincipal());
 
-    var auth = this.authenticationManager.authenticate(usernamePassword);
+        LoginResponseDTO loginResponseDTO = new LoginResponseDTO();
+        loginResponseDTO.setToken(token);
 
-    var token = tokenService.generateToken((User) auth.getPrincipal());
-
-    LoginResponseDTO loginResponseDTO = new LoginResponseDTO();
-    loginResponseDTO.setToken(token);
-
-    return ResponseEntity.ok(loginResponseDTO);
-  }
-
-  @PostMapping("/recover-password")
-  public ResponseEntity<String> recuperarSenha(@RequestBody Map<String, String> payload) {
-    String email = payload.get("email");
-
-    try {
-      userService.solicitarRecuperacaoSenha(email);
-      // Retornamos OK mesmo se o email não existir (para evitar enumeração de usuários)
-      return ResponseEntity.ok("Se o email estiver cadastrado, as instruções foram enviadas.");
-
-    } catch (MessagingException | UnsupportedEncodingException e) {
-      return ResponseEntity.internalServerError().body("Erro ao enviar email: " + e.getMessage());
-    }
-  }
-
-  @PostMapping("/reset-password")
-  public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> payload) {
-    String token = payload.get("token");
-    String newPassword = payload.get("password");
-
-    if (token == null || newPassword == null) {
-      return ResponseEntity.badRequest().body("Token e nova senha são obrigatórios.");
+        return ResponseEntity.ok(loginResponseDTO);
     }
 
-    try {
-      userService.redefinirSenha(token, newPassword);
-      return ResponseEntity.ok("Senha alterada com sucesso.");
-    } catch (RuntimeException e) {
-      return ResponseEntity.badRequest().body(e.getMessage());
-    }
-  }
+    @PostMapping("/recover-password")
+    public ResponseEntity<String> recuperarSenha(@RequestBody Map<String, String> payload) {
+        String email = payload.get("email");
 
-  @GetMapping("/profile")
-  @Operation(summary = "Retorna os dados do perfil do usuário autenticado")
-  @ApiResponses(
-          value = {
-                  @ApiResponse(
-                          responseCode = "200",
-                          description = "Perfil retornado com sucesso",
-                          content = {
-                                  @Content(
-                                          mediaType = "application/json",
-                                          schema = @Schema(implementation = UserProfileDTO.class)
-                                  )
-                          }
-                  ),
-                  @ApiResponse(
-                          responseCode = "401",
-                          description = "Não autenticado",
-                          content = @Content
-                  )
-          }
-  )
-  public ResponseEntity<UserProfileDTO> getProfile(Authentication authentication) {
-    User user = (User) authentication.getPrincipal();
+        try {
+            userService.solicitarRecuperacaoSenha(email);
+            // Retornamos OK mesmo se o email não existir (para evitar enumeração de usuários)
+            return ResponseEntity.ok("Se o email estiver cadastrado, as instruções foram enviadas.");
 
-    UserProfileDTO profile = new UserProfileDTO();
-    profile.setId(user.getId());
-    profile.setNome(user.getNome());
-    profile.setEmail(user.getEmail());
-    profile.setRole(UserRole.valueOf(user.getRole()));
-    profile.setDataCriacao(user.getDataCriacao());
-    profile.setFotoPerfil(user.getFotoPerfil());
-
-    return ResponseEntity.ok(profile);
-  }
-  @PutMapping("/profile")
-  public ResponseEntity<UserProfileDTO> updateProfile(@RequestBody UserUpdateDTO data, Authentication authentication) {
-    User user = (User) authentication.getPrincipal();
-
-    // Verifica confirmação de senha se houver troca de senha
-    if (data.getSenha() != null && !data.getSenha().isBlank()) {
-      if (!data.getSenha().equals(data.getConfirmarSenha())) {
-        return ResponseEntity.badRequest().build(); // Ou mensagem de erro
-      }
+        } catch (MessagingException | UnsupportedEncodingException e) {
+            return ResponseEntity.internalServerError().body("Erro ao enviar email: " + e.getMessage());
+        }
     }
 
-    User atualizado = userService.atualizarUsuario(user, data);
+    @PostMapping("/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestBody Map<String, String> payload) {
+        String token = payload.get("token");
+        String newPassword = payload.get("password");
 
-    // Retorna DTO atualizado
-    UserProfileDTO profile = new UserProfileDTO();
-    profile.setId(atualizado.getId());
-    profile.setNome(atualizado.getNome());
-    profile.setEmail(atualizado.getEmail());
-    profile.setRole(UserRole.valueOf(atualizado.getRole()));
-    profile.setDataCriacao(atualizado.getDataCriacao());
-    profile.setFotoPerfil(atualizado.getFotoPerfil());
+        if (token == null || newPassword == null) {
+            return ResponseEntity.badRequest().body("Token e nova senha são obrigatórios.");
+        }
 
-    return ResponseEntity.ok(profile);
-  }
+        try {
+            userService.redefinirSenha(token, newPassword);
+            return ResponseEntity.ok("Senha alterada com sucesso.");
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
 
-  @DeleteMapping("/profile")
-  public ResponseEntity<Void> deleteAccount(Authentication authentication) {
-    User user = (User) authentication.getPrincipal();
-    userService.deletarConta(user);
-    return ResponseEntity.noContent().build();
-  }
+    @GetMapping("/profile")
+    @Operation(summary = "Retorna os dados do perfil do usuário autenticado")
+    @ApiResponses(
+            value = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Perfil retornado com sucesso",
+                            content = {
+                                    @Content(
+                                            mediaType = "application/json",
+                                            schema = @Schema(implementation = UserProfileDTO.class)
+                                    )
+                            }
+                    ),
+                    @ApiResponse(
+                            responseCode = "401",
+                            description = "Não autenticado",
+                            content = @Content
+                    )
+            }
+    )
+    public ResponseEntity<UserProfileDTO> getProfile(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+
+        UserProfileDTO profile = new UserProfileDTO();
+        profile.setId(user.getId());
+        profile.setNome(user.getNome());
+        profile.setEmail(user.getEmail());
+        profile.setRole(UserRole.valueOf(user.getRole()));
+        profile.setDataCriacao(user.getDataCriacao());
+        profile.setFotoPerfil(user.getFotoPerfil());
+        profile.setPontosHabilidade(user.getPontosHabilidade());
+        profile.setNivelHabilidade(user.getNivelHabilidade());
+
+        long jogadas = partidaRepository.countPartidasJogadas(user.getId());
+        profile.setPartidasJogadas((int) jogadas);
+
+        long vencidas = partidaRepository.countVitoriasDoJogador(user.getId());
+        profile.setPartidasVencidas((int) vencidas);
+
+        return ResponseEntity.ok(profile);
+    }
+
+    @PutMapping("/profile")
+    public ResponseEntity<UserProfileDTO> updateProfile(@RequestBody UserUpdateDTO data, Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+
+        // Verifica confirmação de senha se houver troca de senha
+        if (data.getSenha() != null && !data.getSenha().isBlank()) {
+            if (!data.getSenha().equals(data.getConfirmarSenha())) {
+                return ResponseEntity.badRequest().build(); // Ou mensagem de erro
+            }
+        }
+
+        User atualizado = userService.atualizarUsuario(user, data);
+
+        // Retorna DTO atualizado
+        UserProfileDTO profile = new UserProfileDTO();
+        profile.setId(atualizado.getId());
+        profile.setNome(atualizado.getNome());
+        profile.setEmail(atualizado.getEmail());
+        profile.setRole(UserRole.valueOf(atualizado.getRole()));
+        profile.setDataCriacao(atualizado.getDataCriacao());
+        profile.setFotoPerfil(atualizado.getFotoPerfil());
+
+        return ResponseEntity.ok(profile);
+    }
+
+    @DeleteMapping("/profile")
+    public ResponseEntity<Void> deleteAccount(Authentication authentication) {
+        User user = (User) authentication.getPrincipal();
+        userService.deletarConta(user);
+        return ResponseEntity.noContent().build();
+    }
 }
