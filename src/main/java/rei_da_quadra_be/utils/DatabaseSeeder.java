@@ -180,10 +180,10 @@ public class DatabaseSeeder {
         // Dados para geração aleatória
         String[] nomesEventos = {
                 "Racha dos Amigos", "Fut de Quinta", "Domingueira da Bola", "Clássico do Bairro",
-                "Pelada Sem Compromisso", "Liga Amadora", "Desafio dos Campeões", "Futebol Solidário",
+                "Desafio anual", "Liga Amadora", "Desafio dos Campeões", "Futebol Solidário",
                 "Copa da Várzea", "Treino Tático", "Jogo Beneficente", "Encontro dos Veteranos",
-                "Supercopa Anápolis", "Torneio Relâmpago", "Racha Noturno", "Fut Manhã de Sol",
-                "Desafio da Galera", "Pelada dos Solteiros", "Casados x Solteiros", "Futebol Arte",
+                "Supercopa Anápolis", "Torneio Relâmpago", "Racha Semanal", "Fut Manhã de Sol",
+                "Desafio da Galera", "Pelada dos Amigos", "Copa Anapolina", "Futebol Arte",
                 "Copa Jundiaí", "Torneio Jaiara", "Racha do Centro", "Fut Vila Góis", "Pelada Maracanã"
         };
 
