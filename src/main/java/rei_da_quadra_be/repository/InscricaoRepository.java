@@ -10,7 +10,10 @@ import java.util.List;
 
 @Repository
 public interface InscricaoRepository extends JpaRepository<Inscricao, Long> {
-  List<Inscricao> findByEventoId(Long eventoId);
-  List<Inscricao> findByTimeAtualAndEvento(Time timeAtual, Evento evento);
-  long countByTimeAtual(Time timeAtual);
+    List<Inscricao> findByEventoId(Long eventoId);
+    List<Inscricao> findByTimeAtualAndEvento(Time timeAtual, Evento evento);
+    long countByTimeAtual(Time timeAtual);
+
+    // Conta quantas inscrições um jogador possui (Total de Eventos Participados)
+    long countByJogadorId(Long jogadorId);
 }

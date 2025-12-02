@@ -17,4 +17,6 @@ public class UserProfileDTO {
   private String fotoPerfil;
   private Integer pontosHabilidade;
   private NivelHabilidade nivelHabilidade;
+  private Integer partidasJogadas;
+  private Integer partidasVencidas;
 }
