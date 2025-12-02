@@ -13,4 +13,6 @@ public interface InscricaoRepository extends JpaRepository<Inscricao, Long> {
   List<Inscricao> findByEventoId(Long eventoId);
   List<Inscricao> findByTimeAtualAndEvento(Time timeAtual, Evento evento);
   long countByTimeAtual(Time timeAtual);
+  boolean existsByEventoIdAndJogadorId(Long eventoId, Long jogadorId);
+  List<Inscricao> findByJogadorId(Long jogadorId);
 }
