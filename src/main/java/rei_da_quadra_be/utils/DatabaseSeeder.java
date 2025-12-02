@@ -197,7 +197,7 @@ public class DatabaseSeeder {
         Evento e = new Evento();
         e.setNome("Copa Services Integration");
         e.setLocalEvento("Arena Teste");
-        e.setDataHorarioEvento(LocalDateTime.now().plusDays(1));
+        e.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1));
         e.setJogadoresPorTime(5);
         e.setTotalPartidasDefinidas(15);
         e.setCorPrimaria("#0000FF");
@@ -328,64 +328,4 @@ public class DatabaseSeeder {
             return null;
         }
     }
-  }
-
-  // --- Métodos de Criação de Dados de uso local ---
-
-  private Evento criarEventoViaService(User organizador) {
-    Evento e = new Evento();
-    e.setNome("Copa Services Integration");
-    e.setLocalEvento("Arena Teste");
-    e.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1));
-    e.setJogadoresPorTime(5);
-    e.setTotalPartidasDefinidas(15);
-    e.setCorPrimaria("#0000FF");
-    e.setCorSecundaria("#FFFFFF");
-    e.setStatus(StatusEvento.ATIVO);
-
-    return eventoService.salvarEvento(e, organizador);
-  }
-
-  private List<User> criarMuitosUsuarios() {
-    List<User> lista = new ArrayList<>();
-    // 5 Craques
-    for (int i = 1; i <= 5; i++)
-      lista.add(criarUser("Craque " + i, "craque" + i + "@teste.com", 2500, NivelHabilidade.CRAQUE));
-    // 15 Medianos
-    for (int i = 1; i <= 15; i++)
-      lista.add(criarUser("Mediano " + i, "mediano" + i + "@teste.com", 1500, NivelHabilidade.MEDIANO));
-    // 5 Pernas
-    for (int i = 1; i <= 5; i++)
-      lista.add(criarUser("Perna " + i, "perna" + i + "@teste.com", 800, NivelHabilidade.PERNA_DE_PAU));
-    return lista;
-  }
-
-  private User criarUser(String nome, String email, Integer elo, NivelHabilidade nivel) {
-    User u = new User();
-    u.setNome(nome);
-    u.setEmail(email);
-    u.setPassword(passwordEncoder != null ? passwordEncoder.encode("123456") : "123456");
-    u.setRole("USER");
-    u.setEnabled(true);
-    u.setPontosHabilidade(elo);
-    u.setNivelHabilidade(nivel);
-    u.setDataCriacao(LocalDateTime.now());
-    return userRepository.save(u);
-  }
-
-  private void inscreverUsuario(User user, Evento evento) {
-    Inscricao i = new Inscricao();
-    i.setEvento(evento);
-    i.setJogador(user);
-    i.setPartidasJogadas(0);
-    inscricaoRepository.save(i);
-  }
-
-  private void limparBanco() {
-    partidaRepository.deleteAll(); //partidas primeiro
-    inscricaoRepository.deleteAll();
-    timeRepository.deleteAll();
-    eventoRepository.deleteAll();
-    userRepository.deleteAll();
-  }
 }
