@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "inscricao", uniqueConstraints = {
   @UniqueConstraint(columnNames = {"evento_id", "jogador_id"})
@@ -37,4 +39,7 @@ public class Inscricao {
   @ManyToOne
   @JoinColumn(name = "time_atual_id", nullable = true)
   private Time timeAtual;
+
+  @Column(name = "data_inscricao", nullable = false)
+  private LocalDateTime dataInscricao = LocalDateTime.now();
 }
