@@ -16,6 +16,8 @@ public class EventoRequestDTO {
   private String nome;
   private String local;
   private LocalDateTime dataHorario;
+  private Double latitude;
+  private Double longitude;
 
   public Evento toEvento() {
     Evento evento = new Evento();

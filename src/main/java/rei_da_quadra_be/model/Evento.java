@@ -42,6 +42,12 @@ public class Evento {
   @Column(name = "local_evento", length = 150)
   private String localEvento;
 
+  @Column(nullable = true)
+  private Double latitude;
+
+  @Column(nullable = true)
+  private Double longitude;
+
   @Column(name = "jogadores_por_time")
   private Integer jogadoresPorTime; //quantidade de jogadores por time
 

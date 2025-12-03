@@ -16,6 +16,8 @@ public class EventoResponseDTO {
   private Long id;
   private String nome;
   private String local;
+  private Double latitude;
+  private Double longitude;
   private LocalDateTime dataHorario;
   private Long usuarioId;
   private String usuarioLogin;
