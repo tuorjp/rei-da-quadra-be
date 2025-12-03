@@ -232,6 +232,8 @@ public class AuthenticationController {
     @DeleteMapping("/profile")
     public ResponseEntity<Void> deleteAccount(Authentication authentication) {
         User user = (User) authentication.getPrincipal();
+
+        // "Soft Delete" e anonimização
         userService.deletarConta(user);
         return ResponseEntity.noContent().build();
     }
