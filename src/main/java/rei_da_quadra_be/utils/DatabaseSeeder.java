@@ -314,20 +314,40 @@ public class DatabaseSeeder {
         if (jogadoresDoTime.isEmpty()) return;
 
         Random random = new Random();
+        Set<Long> jogadoresComAcao = new HashSet<>(); // Controla quem já teve ação registrada
 
+        // 1. Simula Gols (Lógica Original)
         for (int k = 0; k < totalGols; k++) {
-            // Escolhe quem fez o gol
             User autorGol = jogadoresDoTime.get(random.nextInt(jogadoresDoTime.size())).getJogador();
-
-            // CHAMA O SERVICE: Isso valida se a regra de negócio permite o gol e atualiza placar/elo
             partidaService.registrarAcao(partida.getId(), autorGol.getId(), TipoAcaoEmJogo.GOL);
+            jogadoresComAcao.add(autorGol.getId());
 
             // Assistência (50% chance)
             if (random.nextBoolean()) {
                 User autorAssistencia = jogadoresDoTime.get(random.nextInt(jogadoresDoTime.size())).getJogador();
                 if (!autorAssistencia.getId().equals(autorGol.getId())) {
                     partidaService.registrarAcao(partida.getId(), autorAssistencia.getId(), TipoAcaoEmJogo.ASSISTENCIA);
+                    jogadoresComAcao.add(autorAssistencia.getId());
                 }
+            }
+        }
+
+        // 2. Simula Ações Diversas para quem não fez gol (Para popular o histórico)
+        for (Inscricao inscricao : jogadoresDoTime) {
+            User jogador = inscricao.getJogador();
+
+            // Se o jogador ainda não teve ação nessa partida, damos uma ação de defesa ou falta
+            if (!jogadoresComAcao.contains(jogador.getId())) {
+                int acaoAleatoria = random.nextInt(100);
+
+                if (acaoAleatoria < 60) {
+                    // 60% de chance de fazer uma DEFESA (Ganhar pontos)
+                    partidaService.registrarAcao(partida.getId(), jogador.getId(), TipoAcaoEmJogo.DEFESA);
+                } else if (acaoAleatoria < 80) {
+                    // 20% de chance de cometer FALTA (Perder pontos)
+                    partidaService.registrarAcao(partida.getId(), jogador.getId(), TipoAcaoEmJogo.FALTA);
+                }
+                // 20% chance de não ter registro específico (apenas jogou)
             }
         }
     }
