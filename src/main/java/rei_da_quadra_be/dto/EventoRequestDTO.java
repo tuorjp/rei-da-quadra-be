@@ -26,7 +26,7 @@ public class EventoRequestDTO {
     Evento evento = new Evento();
     evento.setNome(this.nome);
     evento.setLocalEvento(this.local);
-    evento.setDataHorarioEvento(this.dataHorario);
+    evento.setDataHorario(this.dataHorario);
     evento.setLatitude(this.latitude);
     evento.setLongitude(this.longitude);
 

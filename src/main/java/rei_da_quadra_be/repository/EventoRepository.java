@@ -17,10 +17,10 @@ public interface EventoRepository extends JpaRepository<Evento, Long> {
     List<Evento> findByUsuario(User usuario);
 
     @Query("SELECT e FROM Evento e WHERE " +
-            "e.dataHorarioEvento BETWEEN :dataInicio AND :dataFim " +
+            "e.dataHorario BETWEEN :dataInicio AND :dataFim " +
             "AND e.status = :status " +
             "AND (6371 * acos(cos(radians(:lat)) * cos(radians(e.latitude)) * cos(radians(e.longitude) - radians(:lon)) + sin(radians(:lat)) * sin(radians(e.latitude)))) <= :raio " +
-            "ORDER BY e.dataHorarioEvento ASC, " +
+            "ORDER BY e.dataHorario ASC, " +
             "(6371 * acos(cos(radians(:lat)) * cos(radians(e.latitude)) * cos(radians(e.longitude) - radians(:lon)) + sin(radians(:lat)) * sin(radians(e.latitude)))) ASC")
     List<Evento> buscarEventosProximos(
             @Param("lat") Double latitudeUsuario,

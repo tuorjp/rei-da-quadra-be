@@ -111,7 +111,7 @@ public class DatabaseSeeder {
         e1.setLocalEvento("Parque Ipiranga - Jundiaí, Anápolis");
         e1.setLatitude(-16.3443);
         e1.setLongitude(-48.9478);
-        e1.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1).withHour(19).withMinute(0)); // Amanhã 19h
+        e1.setDataHorario(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1).withHour(19).withMinute(0)); // Amanhã 19h
         e1.setJogadoresPorTime(5);
         e1.setTotalPartidasDefinidas(15);
         e1.setCorPrimaria("#0000FF");
@@ -125,7 +125,7 @@ public class DatabaseSeeder {
         e2.setLocalEvento("Ginásio Internacional Newton de Faria");
         e2.setLatitude(-16.3350);
         e2.setLongitude(-48.9500);
-        e2.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(2).withHour(20).withMinute(30));
+        e2.setDataHorario(OffsetDateTime.now(ZoneOffset.UTC).plusDays(2).withHour(20).withMinute(30));
         e2.setJogadoresPorTime(6);
         e2.setTotalPartidasDefinidas(10);
         e2.setCorPrimaria("#FF0000");
@@ -138,7 +138,7 @@ public class DatabaseSeeder {
         e3.setLocalEvento("Quadra da Av. Fernando Costa - Jaiara");
         e3.setLatitude(-16.2955);
         e3.setLongitude(-48.9602);
-        e3.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusHours(5)); // Hoje mais tarde
+        e3.setDataHorario(OffsetDateTime.now(ZoneOffset.UTC).plusHours(5)); // Hoje mais tarde
         e3.setJogadoresPorTime(5);
         e3.setTotalPartidasDefinidas(5);
         e3.setStatus(StatusEvento.ATIVO);
@@ -150,7 +150,7 @@ public class DatabaseSeeder {
         e4.setLocalEvento("UniEVANGÉLICA - Cidade Universitária");
         e4.setLatitude(-16.3089);
         e4.setLongitude(-48.9450);
-        e4.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(3).withHour(17).withMinute(0));
+        e4.setDataHorario(OffsetDateTime.now(ZoneOffset.UTC).plusDays(3).withHour(17).withMinute(0));
         e4.setJogadoresPorTime(7);
         e4.setStatus(StatusEvento.ATIVO);
         eventosCriados.add(eventoService.salvarEvento(e4, organizadorSecundario));
@@ -161,7 +161,7 @@ public class DatabaseSeeder {
         e5.setLocalEvento("Campo do DAIA");
         e5.setLatitude(-16.4005);
         e5.setLongitude(-48.9208);
-        e5.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(4).withHour(18).withMinute(30));
+        e5.setDataHorario(OffsetDateTime.now(ZoneOffset.UTC).plusDays(4).withHour(18).withMinute(30));
         e5.setJogadoresPorTime(11);
         e5.setStatus(StatusEvento.ATIVO);
         eventosCriados.add(eventoService.salvarEvento(e5, admin));
@@ -217,7 +217,7 @@ public class DatabaseSeeder {
             // Datas variadas nos próximos 10 dias
             int diasFuturos = rand.nextInt(10);
             int hora = 8 + rand.nextInt(14); // Entre 8h e 22h
-            e.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(diasFuturos).withHour(hora).withMinute(0));
+            e.setDataHorario(OffsetDateTime.now(ZoneOffset.UTC).plusDays(diasFuturos).withHour(hora).withMinute(0));
 
             e.setJogadoresPorTime(5 + rand.nextInt(7)); // 5 a 11 jogadores
             e.setStatus(StatusEvento.ATIVO);

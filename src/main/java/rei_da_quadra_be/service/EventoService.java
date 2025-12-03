@@ -104,15 +104,28 @@ public class EventoService {
 
                 field.setAccessible(true);
 
+                if (field.getType().equals(OffsetDateTime.class) && value instanceof String) {
+                    try {
+                        OffsetDateTime parsedDate = OffsetDateTime.parse((String) value);
+                        field.set(eventoExistente, parsedDate);
+                    } catch (DateTimeParseException e) {
+                        System.err.println("Formato inválido para dataHorario. Valor recebido: " + value);
+                        return;
+                    }
+                } else {
+                    field.set(eventoExistente, value);
+                }
+
+                // TRATAMENTO LOCALDATETIME (caso exista outro campo no futuro)
                 if (field.getType().equals(LocalDateTime.class) && value instanceof String) {
                     try {
                         LocalDateTime parsedDate = LocalDateTime.parse((String) value);
                         field.set(eventoExistente, parsedDate);
+                        return;
                     } catch (DateTimeParseException e) {
-                        System.err.println("Formato de data inválido para o campo '" + key + "'.");
+                        System.err.println("Formato inválido para LocalDateTime no campo '" + key + "'");
+                        return;
                     }
-                } else {
-                    field.set(eventoExistente, value);
                 }
 
             } catch (NoSuchFieldException e) {

@@ -32,7 +32,7 @@ public class Evento {
   private User usuario; //criador do evento
 
   @Column(columnDefinition = "TIMESTAMPTZ", name = "data_evento")
-  public OffsetDateTime dataHorarioEvento;
+  private OffsetDateTime dataHorario;
 
   @Column(name = "nome", length = 150, nullable = false)
   private String nome;

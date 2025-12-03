@@ -34,7 +34,7 @@ public class EventoResponseDTO {
         dto.setId(evento.getId());
         dto.setNome(evento.getNome());
         dto.setLocal(evento.getLocalEvento());
-        dto.setDataHorario(evento.getDataHorarioEvento());
+        dto.setDataHorario(evento.getDataHorario());
 
         if (evento.getUsuario() != null) {
             dto.setUsuarioId(evento.getUsuario().getId());

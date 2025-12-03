@@ -97,8 +97,14 @@ public class EventoController {
     @AuthenticationPrincipal User usuario
   ) {
     try {
+      // Validação simples antes de enviar ao service
+      if (fields.containsKey("dataHorario") && !(fields.get("dataHorario") instanceof String)) {
+        return ResponseEntity.badRequest().body(null);
+      }
+
       Evento eventoAtualizado = eventoService.atualizaEventoParcial(id, fields, usuario);
       return ResponseEntity.ok(EventoResponseDTO.fromEvento(eventoAtualizado));
+
     } catch (SecurityException e) {
       return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
     } catch (RuntimeException e) {
