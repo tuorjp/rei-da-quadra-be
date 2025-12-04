@@ -167,13 +167,24 @@ public class PartidaService {
     // Processar rodízio (move jogadores entre time de espera e perdedor)
     Long proximoDesafianteId = admTimesService.processarFimDePartida(partida.getId(), idVencedor);
 
+    // Verifica limite de partidas definido no evento
+    Evento evento = partida.getEvento();
+    Integer totalDefinidas = evento.getTotalPartidasDefinidas();
+    if (totalDefinidas != null) {
+      int totalCriadas = partidaRepository.findByEventoId(evento.getId()).size();
+      // Se já alcançamos ou ultrapassamos o número de partidas definidas, não criamos nova partida
+      if (totalCriadas >= totalDefinidas) {
+        return partida; // retorna a partida finalizada
+      }
+    }
+
     // Determina vencedor e busca o time desafiante (pode ser o perdedor original ou outro time escolhido)
     Time vencedor = partida.getTimeA().getId().equals(idVencedor) ? partida.getTimeA() : partida.getTimeB();
     Time desafiante = timeService.buscarPorId(proximoDesafianteId);
 
     // Cria nova partida com vencedor como Time A e desafiante como Time B
     Partida nova = new Partida();
-    nova.setEvento(partida.getEvento());
+    nova.setEvento(evento);
     nova.setTimeA(vencedor);
     nova.setTimeB(desafiante);
     nova.setTimeAPlacar(0);
