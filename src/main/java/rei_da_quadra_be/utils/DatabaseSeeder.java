@@ -13,10 +13,7 @@ import rei_da_quadra_be.enums.StatusEvento;
 import rei_da_quadra_be.enums.TipoAcaoEmJogo;
 import rei_da_quadra_be.model.*;
 import rei_da_quadra_be.repository.*;
-import rei_da_quadra_be.service.AdmTimesService;
-import rei_da_quadra_be.service.EventoService;
-import rei_da_quadra_be.service.PartidaService;
-import rei_da_quadra_be.service.TimeService;
+import rei_da_quadra_be.service.*;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -46,8 +43,10 @@ public class DatabaseSeeder {
     private final PartidaService partidaService;
     private final TimeService timeService;
     private final AdmTimesService admTimesService;
+  private final UserService userService;
+  private final AuthorizationService authorizationService;
 
-    // Contador para controle das imagens 1.png a 25.png
+  // Contador para controle das imagens 1.png a 25.png
     private int contadorImagens = 1;
 
     @Bean
@@ -66,6 +65,8 @@ public class DatabaseSeeder {
             if (fotoAdmin == null) fotoAdmin = gerarAvatarBase64("ADMIN");
 
             User userAdm = criarUser("ADMIN", "admin@gmail.com", 5000, NivelHabilidade.CRAQUE, fotoAdmin);
+
+            criarCenarioPersonalizado();
 
             // Cria os demais usuários distribuindo as imagens 1 a 25
             List<User> users = criarMuitosUsuarios();
@@ -453,4 +454,47 @@ public class DatabaseSeeder {
             return null;
         }
     }
+
+  // --- NOVO MÉTODO SOLICITADO: Cria um cenário isolado (Jogadores + Evento + Inscrições) ---
+  private void criarCenarioPersonalizado() {
+    System.out.println(">>> Iniciando criação de Cenário Personalizado...");
+
+    // 1. Criar o Organizador do Evento
+    // Gera um avatar automático passando null na foto
+    User organizador = (User) authorizationService.loadUserByUsername("admin@gmail.com");
+
+    // 2. Criar o Evento
+    Evento evento = new Evento();
+    evento.setNome("AQUIIIIII");
+    evento.setLocalEvento("Arena Code - Anápolis");
+    evento.setLatitude(-16.3250); // Coordenada ilustrativa
+    evento.setLongitude(-48.9550);
+    evento.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7).withHour(20).withMinute(0));
+    evento.setJogadoresPorTime(5);
+    evento.setTotalPartidasDefinidas(5);
+    evento.setStatus(StatusEvento.ATIVO);
+
+    // Salva o evento definindo o organizador (Service aplica regras de negócio se houver)
+    Evento eventoSalvo = eventoService.salvarEvento(evento, organizador);
+    System.out.println("ENVENTO IDDDDDDDDDD" + eventoSalvo.getId());
+
+    // 3. Criar Jogadores e gerar Inscrição para cada um
+    int totalJogadores = 15; // Ex: Suficiente para 3 times de 5
+
+    for (int i = 1; i <= totalJogadores; i++) {
+      // Cria o usuário (Jogador)
+      User jogador = criarUser(
+        "Jogador Teste " + i,
+        "jogador.teste" + i + "@gmail.com",
+        1000 + (i * 50), // Varia o ELO ligeiramente
+        (i % 2 == 0) ? NivelHabilidade.MEDIANO : NivelHabilidade.PERNA_DE_PAU, // Intercala níveis
+        null // Gera avatar automático
+      );
+
+      // Cria a inscrição para este jogador no evento
+      inscreverUsuario(jogador, eventoSalvo);
+    }
+
+    System.out.println(">>> Cenário criado: Evento '" + eventoSalvo.getNome() + "' com " + totalJogadores + " inscritos.");
+  }
 }

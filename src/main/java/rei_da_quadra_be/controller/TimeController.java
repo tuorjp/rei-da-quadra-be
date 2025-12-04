@@ -5,9 +5,11 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import rei_da_quadra_be.dto.JogadorDTO;
 import rei_da_quadra_be.dto.TimeResponseDTO;
 import rei_da_quadra_be.dto.TimeUpdateDTO;
 import rei_da_quadra_be.model.Time;
+import rei_da_quadra_be.model.User;
 import rei_da_quadra_be.service.TimeService;
 
 import java.util.List;
@@ -24,7 +26,11 @@ public class TimeController {
   @GetMapping("/eventos/{eventoId}/times")
   public ResponseEntity<List<TimeResponseDTO>> listarPorEvento(@PathVariable Long eventoId) {
     List<Time> times = timeService.listarTimesDoEvento(eventoId);
-    List<TimeResponseDTO> dtos = times.stream().map(this::toResponseDTO).toList();
+    List<TimeResponseDTO> dtos = times
+      .stream()
+      .map(this::toResponseDTO)
+      .toList();
+
     return ResponseEntity.ok(dtos);
   }
 
@@ -42,13 +48,32 @@ public class TimeController {
     return ResponseEntity.ok(toResponseDTO(time));
   }
 
-  private TimeResponseDTO toResponseDTO(Time t) {
+  private TimeResponseDTO toResponseDTO(Time time) {
     TimeResponseDTO dto = new TimeResponseDTO();
-    dto.setId(t.getId());
-    dto.setNome(t.getNome());
-    dto.setCor(t.getCor());
-    dto.setTimeDeEspera(t.getTimeDeEspera());
-    dto.setStatus(t.getStatus().toString());
+    dto.setId(time.getId());
+    dto.setNome(time.getNome());
+    dto.setCor(time.getCor());
+    dto.setTimeDeEspera(time.getTimeDeEspera());
+    dto.setStatus(time.getStatus().toString());
+
+    if (time.getInscricoes() != null) {
+      List<JogadorDTO> jogadoresDto = time.getInscricoes().stream()
+        .map(inscricao -> {
+          User usuario = inscricao.getJogador();
+          return new JogadorDTO(
+            inscricao.getId(),
+            inscricao.getEvento().getId(),
+            time.getId(),
+            inscricao.getJogador().getNome(),
+            inscricao.getJogador().getNivelHabilidade(),
+            inscricao.getJogador().getFotoPerfil()
+          );
+        })
+        .toList();
+
+      dto.setJogadores(jogadoresDto);
+    }
+
     return dto;
   }
 }
