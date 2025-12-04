@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import rei_da_quadra_be.dto.AcaoJogoDTO;
@@ -27,7 +28,7 @@ public class PartidaController {
   private final PartidaService partidaService;
 
   @Operation(summary = "Lista todas as partidas de um evento")
-  @GetMapping("/eventos/{eventoId}/partidas")
+  @GetMapping(value = "/eventos/{eventoId}/partidas", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<List<PartidaResponseDTO>> listarPorEvento(@PathVariable Long eventoId) {
     List<Partida> partidas = partidaService.listarPartidasDoEvento(eventoId);
     List<PartidaResponseDTO> dtos = partidas.stream().map(this::toResponseDTO).toList();
@@ -35,21 +36,21 @@ public class PartidaController {
   }
 
   @Operation(summary = "Cria uma nova partida manualmente")
-  @PostMapping("/eventos/{eventoId}/partidas")
+  @PostMapping(value = "/eventos/{eventoId}/partidas", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<PartidaResponseDTO> criarPartida(@PathVariable Long eventoId, @RequestBody @Valid PartidaCreateDTO dto) {
     Partida partida = partidaService.criarPartida(eventoId, dto.getTimeAId(), dto.getTimeBId());
     return ResponseEntity.status(HttpStatus.CREATED).body(toResponseDTO(partida));
   }
 
   @Operation(summary = "Inicia uma partida")
-  @PostMapping("/partidas/{id}/iniciar")
+  @PostMapping(value = "/partidas/{id}/iniciar", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<PartidaResponseDTO> iniciarPartida(@PathVariable Long id) {
     Partida partida = partidaService.iniciarPartida(id);
     return ResponseEntity.ok(toResponseDTO(partida));
   }
 
   @Operation(summary = "Registra uma ação (Gol, Assistência, Defesa)")
-  @PostMapping("/partidas/{id}/acoes")
+  @PostMapping(value = "/partidas/{id}/acoes")
   public ResponseEntity<Void> registrarAcao(@PathVariable Long id, @RequestBody @Valid AcaoJogoDTO dto) {
     partidaService.registrarAcao(id, dto.getJogadorId(), dto.getTipoAcao());
     return ResponseEntity.ok().build();
@@ -60,7 +61,7 @@ public class PartidaController {
     @ApiResponse(responseCode = "200", description = "Partida finalizada e rodízio aplicado"),
     @ApiResponse(responseCode = "400", description = "Partida já finalizada ou inválida", content = @Content)
   })
-  @PostMapping("/partidas/{id}/finalizar")
+  @PostMapping(value = "/partidas/{id}/finalizar", produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<PartidaResponseDTO> finalizarPartida(@PathVariable Long id) {
     Partida partida = partidaService.finalizarPartida(id);
     return ResponseEntity.ok(toResponseDTO(partida));

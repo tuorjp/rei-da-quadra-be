@@ -10,7 +10,9 @@ public class PartidaResponseDTO {
   private String status;
   private String timeANome;
   private Integer timeAPlacar;
+  private Integer timeAId;
   private String timeBNome;
   private Integer timeBPlacar;
+  private Integer timeBId;
   private Long eventoId;
 }
