@@ -252,11 +252,18 @@ public class AdmTimesService {
 
     //QUEM SAI (Sai do Time Perdedor → Vai para o Banco)
     //a regra diz "jogadores do time perdedor serão selecionados para compor time de reserva".
-    //normalmente sai o time inteiro, mas se o banco for menor que o time, fazemos troca parcial
-    //assumindo troca total ou até esvaziar o banco.
-    List<Inscricao> quemSai = new ArrayList<>(jogadoresNoTimePerdedor);
+    //Normalmente sai o time inteiro, mas se o banco for menor que o time, fazemos troca parcial:
+    //devemos trocar apenas a mesma quantidade de jogadores que entram do banco.
+    int numEntrando = quemEntra.size();
 
-    //executa a troca no banco de dados
+    // Seleciona os jogadores do time perdedor que irão para o banco.
+    // Prioriza enviar ao banco os jogadores que já jogaram mais (descendente), para descanso.
+    List<Inscricao> quemSai = jogadoresNoTimePerdedor.stream()
+      .sorted(Comparator.comparingInt(Inscricao::getPartidasJogadas).reversed())
+      .limit(numEntrando)
+      .toList();
+
+    //executa a troca no banco de dados (quantidades correspondentes)
     for (Inscricao entrando : quemEntra) {
       entrando.setTimeAtual(timePerdedor); //entra em campo (no lugar do perdedor)
       inscricaoRepository.save(entrando);
