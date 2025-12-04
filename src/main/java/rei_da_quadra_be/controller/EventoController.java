@@ -126,5 +126,28 @@ public class EventoController {
       return ResponseEntity.notFound().build();
     }
   }
+    @GetMapping("/proximos")
+    @Operation(summary = "Lista eventos próximos baseados na localização e data")
+    public ResponseEntity<List<EventoResponseDTO>> listarEventosProximos(
+            @RequestParam("lat") Double latitude,
+            @RequestParam("lon") Double longitude,
+            @RequestParam(value = "limit", defaultValue = "20") int limit,
+            @AuthenticationPrincipal User usuario
+    ) {
+        // Passa o limite para o service
+        List<Evento> eventos = eventoService.buscarEventosProximos(latitude, longitude, limit);
+
+        List<EventoResponseDTO> dtos = eventos.stream().map(evento -> {
+            EventoResponseDTO dto = EventoResponseDTO.fromEvento(evento);
+
+            // Define se o usuário logado é o organizador para controle do botão no Frontend
+            boolean isOrganizer = evento.getUsuario().getId().equals(usuario.getId());
+            dto.setIsOrganizer(isOrganizer);
+
+            return dto;
+        }).collect(Collectors.toList());
+
+        return ResponseEntity.ok(dtos);
+    }
 }
 

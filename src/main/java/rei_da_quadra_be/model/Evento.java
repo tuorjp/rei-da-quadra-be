@@ -9,6 +9,7 @@ import lombok.Setter;
 import rei_da_quadra_be.enums.StatusEvento;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,8 +31,8 @@ public class Evento {
   @JsonBackReference
   private User usuario; //criador do evento
 
-  @Column(columnDefinition = "TIMESTAMP", name = "data_evento")
-  public LocalDateTime dataHorarioEvento;
+  @Column(columnDefinition = "TIMESTAMPTZ", name = "data_evento")
+  public OffsetDateTime dataHorarioEvento;
 
   @Column(name = "nome", length = 150, nullable = false)
   private String nome;

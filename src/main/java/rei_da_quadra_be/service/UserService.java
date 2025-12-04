@@ -62,14 +62,30 @@ public class UserService {
 
     return userRepository.save(userAtual);
   }
+    // SoftDelete
+    public void deletarConta(User user) {
+        // 1. Remove tokens de confirmação pendentes (limpeza)
+        tokenRepository.findByUser(user).ifPresent(token -> tokenRepository.delete(token));
 
-  public void deletarConta(User user) {
-    // Primeiro remove tokens associados para evitar erro de FK
-    tokenRepository.findByUser(user).ifPresent(token -> tokenRepository.delete(token));
+        // 2. Anonimizar dados pessoais
+        user.setNome("Usuário Excluído");
+        user.setFotoPerfil(null); // Remove a foto
 
-    // Remove o usuário
-    userRepository.delete(user);
-  }
+        // 3. Liberar o E-mail para novo cadastro
+        // Alteramos o email atual para algo único que não conflite, mas libere o original
+        String emailOriginal = user.getEmail();
+        String emailAnonimizado = System.currentTimeMillis() + "_deleted_" + emailOriginal;
+        user.setEmail(emailAnonimizado);
+
+        // 4. Inutilizar a senha (gera hash de UUID aleatório para impedir login)
+        user.setPassword(passwordEncoder.encode(UUID.randomUUID().toString()));
+
+        // 5. Desativar a conta
+        user.setEnabled(false);
+
+        // 6. Salvar as alterações (Update ao invés de Delete)
+        userRepository.save(user);
+    }
 
   public void solicitarRecuperacaoSenha(String email) throws MessagingException, UnsupportedEncodingException {
     UserDetails userDetails = userRepository.findByEmail(email);

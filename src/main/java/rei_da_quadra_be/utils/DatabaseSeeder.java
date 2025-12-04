@@ -24,6 +24,8 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.List;
 
@@ -68,25 +70,166 @@ public class DatabaseSeeder {
             // Cria os demais usuários distribuindo as imagens 1 a 25
             List<User> users = criarMuitosUsuarios();
 
-            // 2. Criar Evento via Service (Lógica original mantida)
-            Evento evento = criarEventoViaService(userAdm);
-            System.out.println("Evento criado via Service: " + evento.getNome());
+            // 2. Criar Múltiplos Eventos em Anápolis
+            // Gera 5 eventos principais + 25 aleatórios
+            List<Evento> eventosAnapolis = criarEventosAnapolis(userAdm, users);
 
-            // 3. Inscrever Usuários
-            users.forEach(user -> inscreverUsuario(user, evento));
-            System.out.println("Usuários inscritos.");
+            // O evento principal para simulação será o primeiro da lista (Copa Ipiranga)
+            Evento eventoPrincipal = eventosAnapolis.get(0);
+            System.out.println("Evento Principal selecionado para Simulação: " + eventoPrincipal.getNome());
 
-            // 4. Montar Times via Service
+            // 3. Inscrever Usuários (Apenas no evento principal para a simulação funcionar e ter times)
+            users.forEach(user -> inscreverUsuario(user, eventoPrincipal));
+            System.out.println("Usuários inscritos no evento principal.");
+
+            // 4. Montar Times via Service (Apenas no evento principal)
             System.out.println("Executando algoritmo de distribuição de times...");
-            admTimesService.montarTimesInicial(evento.getId());
+            admTimesService.montarTimesInicial(eventoPrincipal.getId());
             System.out.println("Times montados e balanceados.");
 
-            // 5. Simular Torneio usando PartidaService
+            // 5. Simular Torneio usando PartidaService (Apenas no evento principal)
             System.out.println("===Iniciando Simulação de Partidas via Services===");
-            simularTorneioComServices(evento);
+            simularTorneioComServices(eventoPrincipal);
 
             System.out.println("===Seeding concluído===");
         };
+    }
+
+    // --- NOVO METODO: Cria eventos com coordenadas reais de Anápolis ---
+    private List<Evento> criarEventosAnapolis(User admin, List<User> outrosUsuarios) {
+        List<Evento> eventosCriados = new ArrayList<>();
+
+        // Pega usuários comuns para serem donos de alguns eventos, variando os organizadores
+        User organizadorSecundario = outrosUsuarios.isEmpty() ? admin : outrosUsuarios.get(0);
+        User organizadorTerciario = outrosUsuarios.size() > 1 ? outrosUsuarios.get(1) : admin;
+
+        // --- 5 Eventos Principais (Locais Reais) ---
+
+        // Evento 1: Parque Ipiranga (Principal - será simulado)
+        Evento e1 = new Evento();
+        e1.setNome("Copa Ipiranga de Futsal");
+        e1.setLocalEvento("Parque Ipiranga - Jundiaí, Anápolis");
+        e1.setLatitude(-16.3443);
+        e1.setLongitude(-48.9478);
+        e1.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1).withHour(19).withMinute(0)); // Amanhã 19h
+        e1.setJogadoresPorTime(5);
+        e1.setTotalPartidasDefinidas(15);
+        e1.setCorPrimaria("#0000FF");
+        e1.setCorSecundaria("#FFFFFF");
+        e1.setStatus(StatusEvento.ATIVO);
+        eventosCriados.add(eventoService.salvarEvento(e1, admin));
+
+        // Evento 2: Ginásio Newton de Faria
+        Evento e2 = new Evento();
+        e2.setNome("Torneio Interbairros");
+        e2.setLocalEvento("Ginásio Internacional Newton de Faria");
+        e2.setLatitude(-16.3350);
+        e2.setLongitude(-48.9500);
+        e2.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(2).withHour(20).withMinute(30));
+        e2.setJogadoresPorTime(6);
+        e2.setTotalPartidasDefinidas(10);
+        e2.setCorPrimaria("#FF0000");
+        e2.setStatus(StatusEvento.ATIVO);
+        eventosCriados.add(eventoService.salvarEvento(e2, admin));
+
+        // Evento 3: Jaiara
+        Evento e3 = new Evento();
+        e3.setNome("Racha da Jaiara");
+        e3.setLocalEvento("Quadra da Av. Fernando Costa - Jaiara");
+        e3.setLatitude(-16.2955);
+        e3.setLongitude(-48.9602);
+        e3.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusHours(5)); // Hoje mais tarde
+        e3.setJogadoresPorTime(5);
+        e3.setTotalPartidasDefinidas(5);
+        e3.setStatus(StatusEvento.ATIVO);
+        eventosCriados.add(eventoService.salvarEvento(e3, organizadorSecundario));
+
+        // Evento 4: UniEVANGÉLICA
+        Evento e4 = new Evento();
+        e4.setNome("Treino Universitário");
+        e4.setLocalEvento("UniEVANGÉLICA - Cidade Universitária");
+        e4.setLatitude(-16.3089);
+        e4.setLongitude(-48.9450);
+        e4.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(3).withHour(17).withMinute(0));
+        e4.setJogadoresPorTime(7);
+        e4.setStatus(StatusEvento.ATIVO);
+        eventosCriados.add(eventoService.salvarEvento(e4, organizadorSecundario));
+
+        // Evento 5: DAIA
+        Evento e5 = new Evento();
+        e5.setNome("Futebol dos Trabalhadores");
+        e5.setLocalEvento("Campo do DAIA");
+        e5.setLatitude(-16.4005);
+        e5.setLongitude(-48.9208);
+        e5.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(4).withHour(18).withMinute(30));
+        e5.setJogadoresPorTime(11);
+        e5.setStatus(StatusEvento.ATIVO);
+        eventosCriados.add(eventoService.salvarEvento(e5, admin));
+
+        // --- GERAR MAIS 25 EVENTOS ESPALHADOS ---
+        eventosCriados.addAll(gerarMais25Eventos(admin, organizadorSecundario, organizadorTerciario));
+
+        return eventosCriados;
+    }
+
+    private List<Evento> gerarMais25Eventos(User u1, User u2, User u3) {
+        List<Evento> extras = new ArrayList<>();
+        Random rand = new Random();
+        User[] organizadores = {u1, u2, u3};
+
+        // Dados para geração aleatória
+        String[] nomesEventos = {
+                "Racha dos Amigos", "Fut de Quinta", "Domingueira da Bola", "Clássico do Bairro",
+                "Desafio anual", "Liga Amadora", "Desafio dos Campeões", "Futebol Solidário",
+                "Copa da Várzea", "Treino Tático", "Jogo Beneficente", "Encontro dos Veteranos",
+                "Supercopa Anápolis", "Torneio Relâmpago", "Racha Semanal", "Fut Manhã de Sol",
+                "Desafio da Galera", "Pelada dos Amigos", "Copa Anapolina", "Futebol Arte",
+                "Copa Jundiaí", "Torneio Jaiara", "Racha do Centro", "Fut Vila Góis", "Pelada Maracanã"
+        };
+
+        String[] locais = {
+                "Quadra da Praça Bom Jesus", "Campo do Maracanã", "Clube Ipiranga", "SESC Anápolis",
+                "Estádio Jonas Duarte", "Quadra do Bairro de Lourdes", "Campo da Vila Jaiara",
+                "Centro Esportivo da Vila Góis", "Quadra do Recanto do Sol", "Campo do Filostro",
+                "Arena Jundiaí", "Society do Centro", "Quadra da Escola Militar", "Campo do Itamaraty",
+                "Poliesportivo da Vila União", "Campo do Boa Vista", "Quadra do São Joaquim",
+                "Arena Anápolis City", "Campo do Vivian Parque", "Quadra do Santa Maria",
+                "Society da Avenida Brasil", "Campo do Jardim Europa", "Quadra do Calixtolândia",
+                "Centro de Treinamento", "Quadra da Praça Jamel Cecílio"
+        };
+
+        // Centro aproximado de Anápolis
+        double latBase = -16.3289;
+        double lonBase = -48.9534;
+
+        for (int i = 0; i < 25; i++) {
+            Evento e = new Evento();
+            e.setNome(nomesEventos[i % nomesEventos.length] + " #" + (i + 1));
+            e.setLocalEvento(locais[i % locais.length]);
+
+            // Gera coordenada aleatória num raio próximo (~5-7km do centro)
+            // 0.1 grau é aprox 11km, então 0.06 é aprox 6km
+            double latOffset = (rand.nextDouble() - 0.5) * 0.12;
+            double lonOffset = (rand.nextDouble() - 0.5) * 0.12;
+            e.setLatitude(latBase + latOffset);
+            e.setLongitude(lonBase + lonOffset);
+
+            // Datas variadas nos próximos 10 dias
+            int diasFuturos = rand.nextInt(10);
+            int hora = 8 + rand.nextInt(14); // Entre 8h e 22h
+            e.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(diasFuturos).withHour(hora).withMinute(0));
+
+            e.setJogadoresPorTime(5 + rand.nextInt(7)); // 5 a 11 jogadores
+            e.setStatus(StatusEvento.ATIVO);
+            e.setTotalPartidasDefinidas(1);
+
+            // Alterna organizadores
+            User org = organizadores[rand.nextInt(organizadores.length)];
+
+            extras.add(eventoService.salvarEvento(e, org));
+        }
+
+        return extras;
     }
 
     @Transactional
@@ -171,38 +314,42 @@ public class DatabaseSeeder {
         if (jogadoresDoTime.isEmpty()) return;
 
         Random random = new Random();
+        Set<Long> jogadoresComAcao = new HashSet<>(); // Controla quem já teve ação registrada
 
+        // 1. Simula Gols (Lógica Original)
         for (int k = 0; k < totalGols; k++) {
-            // Escolhe quem fez o gol
             User autorGol = jogadoresDoTime.get(random.nextInt(jogadoresDoTime.size())).getJogador();
-
-            // CHAMA O SERVICE: Isso valida se a regra de negócio permite o gol e atualiza placar/elo
             partidaService.registrarAcao(partida.getId(), autorGol.getId(), TipoAcaoEmJogo.GOL);
+            jogadoresComAcao.add(autorGol.getId());
 
             // Assistência (50% chance)
             if (random.nextBoolean()) {
                 User autorAssistencia = jogadoresDoTime.get(random.nextInt(jogadoresDoTime.size())).getJogador();
                 if (!autorAssistencia.getId().equals(autorGol.getId())) {
                     partidaService.registrarAcao(partida.getId(), autorAssistencia.getId(), TipoAcaoEmJogo.ASSISTENCIA);
+                    jogadoresComAcao.add(autorAssistencia.getId());
                 }
             }
         }
-    }
 
-    // --- Métodos de Criação de Dados de uso local ---
+        // 2. Simula Ações Diversas para quem não fez gol (Para popular o histórico)
+        for (Inscricao inscricao : jogadoresDoTime) {
+            User jogador = inscricao.getJogador();
 
-    private Evento criarEventoViaService(User organizador) {
-        Evento e = new Evento();
-        e.setNome("Copa Services Integration");
-        e.setLocalEvento("Arena Teste");
-        e.setDataHorarioEvento(LocalDateTime.now().plusDays(1));
-        e.setJogadoresPorTime(5);
-        e.setTotalPartidasDefinidas(15);
-        e.setCorPrimaria("#0000FF");
-        e.setCorSecundaria("#FFFFFF");
-        e.setStatus(StatusEvento.ATIVO);
+            // Se o jogador ainda não teve ação nessa partida, damos uma ação de defesa ou falta
+            if (!jogadoresComAcao.contains(jogador.getId())) {
+                int acaoAleatoria = random.nextInt(100);
 
-        return eventoService.salvarEvento(e, organizador);
+                if (acaoAleatoria < 60) {
+                    // 60% de chance de fazer uma DEFESA (Ganhar pontos)
+                    partidaService.registrarAcao(partida.getId(), jogador.getId(), TipoAcaoEmJogo.DEFESA);
+                } else if (acaoAleatoria < 80) {
+                    // 20% de chance de cometer FALTA (Perder pontos)
+                    partidaService.registrarAcao(partida.getId(), jogador.getId(), TipoAcaoEmJogo.FALTA);
+                }
+                // 20% chance de não ter registro específico (apenas jogou)
+            }
+        }
     }
 
     private List<User> criarMuitosUsuarios() {
@@ -255,7 +402,7 @@ public class DatabaseSeeder {
     }
 
     private void limparBanco() {
-        partidaRepository.deleteAll(); //partidas primeiro
+        partidaRepository.deleteAll();
         inscricaoRepository.deleteAll();
         timeRepository.deleteAll();
         eventoRepository.deleteAll();

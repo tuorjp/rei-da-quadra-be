@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import rei_da_quadra_be.enums.TipoAcaoEmJogo;
 
 import java.time.LocalDateTime;
 
@@ -16,29 +17,33 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class HistoricoPontuacao {
 
-  @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
-  @Column(name = "historico_id")
-  private Long id;
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "historico_id")
+    private Long id;
 
-  @Column(name = "pontos_antes", nullable = false)
-  private Integer pontosAntes;
+    @Column(name = "pontos_antes", nullable = false)
+    private Integer pontosAntes;
 
-  @Column(name = "pontos_depois", nullable = false)
-  private Integer pontosDepois;
+    @Column(name = "pontos_depois", nullable = false)
+    private Integer pontosDepois;
 
-  @Column(name = "variacao", nullable = false)
-  private Integer variacao;
+    @Column(name = "variacao", nullable = false)
+    private Integer variacao;
 
-  @Column(name = "data_registro")
-  private LocalDateTime dataRegistro = LocalDateTime.now();
+    @Column(name = "data_registro", nullable = false)
+    private LocalDateTime dataRegistro = LocalDateTime.now();
 
-  @ManyToOne
-  @JoinColumn(name = "jogador_id", nullable = false)
-  private User jogador;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "acao", length = 40, nullable = false)
+    private TipoAcaoEmJogo acao;
 
-  //partida que causou a alteração na pontuação
-  @ManyToOne
-  @JoinColumn(name = "partida_id", nullable = false)
-  private Partida partida;
+    @ManyToOne
+    @JoinColumn(name = "jogador_id", nullable = false)
+    private User jogador;
+
+    // Partida que gerou a alteração de pontos
+    @ManyToOne
+    @JoinColumn(name = "partida_id", nullable = false)
+    private Partida partida;
 }
