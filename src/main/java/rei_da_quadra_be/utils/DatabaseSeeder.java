@@ -67,6 +67,7 @@ public class DatabaseSeeder {
             User userAdm = criarUser("ADMIN", "admin@gmail.com", 5000, NivelHabilidade.CRAQUE, fotoAdmin);
 
             criarCenarioPersonalizado();
+            criarCenarioComReserva();
 
             // Cria os demais usuários distribuindo as imagens 1 a 25
             List<User> users = criarMuitosUsuarios();
@@ -517,4 +518,62 @@ public class DatabaseSeeder {
 
     System.out.println(">>> Cenário criado: Evento '" + eventoSalvo.getNome() + "' com " + totalJogadores + " inscritos.");
   }
+
+    /**
+     * Cria um cenário de demonstração com time de espera (reserva) garantido.
+     * Não é chamado automaticamente pelo seeder principal — chame manualmente quando
+     * quiser popular o banco com um evento específico para demonstração.
+     */
+    private void criarCenarioComReserva() {
+        System.out.println(">>> Criando cenário com reserva...");
+
+        User organizador = (User) authorizationService.loadUserByUsername("admin@gmail.com");
+
+        Evento evento = new Evento();
+        evento.setNome("Cenário Reserva");
+        evento.setLocalEvento("Arena Demo");
+        evento.setLatitude(-16.3300);
+        evento.setLongitude(-48.9500);
+        evento.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(2).withHour(18).withMinute(0));
+        evento.setJogadoresPorTime(5);
+        evento.setTotalPartidasDefinidas(8);
+        evento.setStatus(StatusEvento.ATIVO);
+
+        Evento eventoSalvo = eventoService.salvarEvento(evento, organizador);
+        System.out.println("Evento de demonstração criado: " + eventoSalvo.getNome() + " (id=" + eventoSalvo.getId() + ")");
+
+        // Calcula número de jogadores para garantir sobras (reserva)
+        int jogadoresPorTime = eventoSalvo.getJogadoresPorTime() != null ? eventoSalvo.getJogadoresPorTime() : 5;
+        int numTimesAtivos = 3; // 3 times em campo
+        int sobraReserva = 2;   // 2 jogadores no banco
+        int totalJogadores = jogadoresPorTime * numTimesAtivos + sobraReserva;
+
+        for (int i = 1; i <= totalJogadores; i++) {
+            User jogador = criarUser(
+                "Demo Jogador " + i,
+                "demo.jogador" + i + "@example.com",
+                1000 + i * 10,
+                (i % 2 == 0) ? NivelHabilidade.MEDIANO : NivelHabilidade.PERNA_DE_PAU,
+                null
+            );
+            inscreverUsuario(jogador, eventoSalvo);
+        }
+
+        // Monta times e garante que exista time de espera preenchido com as sobras
+        admTimesService.montarTimesInicial(eventoSalvo.getId());
+
+        // Log do time de espera e seus jogadores
+        Optional<Time> timeEsperaOpt = timeRepository.findByEventoAndTimeDeEsperaTrue(eventoSalvo);
+        if (timeEsperaOpt.isPresent()) {
+            Time timeEspera = timeEsperaOpt.get();
+            List<Inscricao> inscritosNoBanco = inscricaoRepository.findByTimeAtualAndEvento(timeEspera, eventoSalvo);
+            System.out.println("Time de Espera: " + timeEspera.getNome() + " (id=" + timeEspera.getId() + ")");
+            System.out.println("Jogadores no banco: " + inscritosNoBanco.size());
+            inscritosNoBanco.forEach(ins -> System.out.println(" - " + ins.getJogador().getNome()));
+        } else {
+            System.out.println("Nenhum time de espera encontrado para o evento de demonstração.");
+        }
+
+        System.out.println(">>> Cenário de demonstração com reserva criado com " + totalJogadores + " inscritos.");
+    }
 }
