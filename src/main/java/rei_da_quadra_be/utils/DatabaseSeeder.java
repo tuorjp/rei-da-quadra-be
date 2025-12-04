@@ -30,7 +30,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DatabaseSeeder {
 
-    //repositories
+    // repositories
     private final UserRepository userRepository;
     private final EventoRepository eventoRepository;
     private final InscricaoRepository inscricaoRepository;
@@ -38,15 +38,15 @@ public class DatabaseSeeder {
     private final PartidaRepository partidaRepository;
     private final PasswordEncoder passwordEncoder;
 
-    //services
+    // services
     private final EventoService eventoService;
     private final PartidaService partidaService;
     private final TimeService timeService;
     private final AdmTimesService admTimesService;
-  private final UserService userService;
-  private final AuthorizationService authorizationService;
+    private final UserService userService;
+    private final AuthorizationService authorizationService;
 
-  // Contador para controle das imagens 1.png a 25.png
+    // Contador para controle das imagens 1.png a 25.png
     private int contadorImagens = 1;
 
     @Bean
@@ -62,7 +62,8 @@ public class DatabaseSeeder {
             // 1. Criar Usuários
             // Tenta carregar a imagem do admin, se não conseguir, gera avatar
             String fotoAdmin = carregarImagem("avatares/admin.png");
-            if (fotoAdmin == null) fotoAdmin = gerarAvatarBase64("ADMIN");
+            if (fotoAdmin == null)
+                fotoAdmin = gerarAvatarBase64("ADMIN");
 
             User userAdm = criarUser("ADMIN", "admin@gmail.com", 5000, NivelHabilidade.CRAQUE, fotoAdmin);
 
@@ -80,7 +81,8 @@ public class DatabaseSeeder {
             Evento eventoPrincipal = eventosAnapolis.get(0);
             System.out.println("Evento Principal selecionado para Simulação: " + eventoPrincipal.getNome());
 
-            // 3. Inscrever Usuários (Apenas no evento principal para a simulação funcionar e ter times)
+            // 3. Inscrever Usuários (Apenas no evento principal para a simulação funcionar
+            // e ter times)
             users.forEach(user -> inscreverUsuario(user, eventoPrincipal));
             System.out.println("Usuários inscritos no evento principal.");
 
@@ -101,7 +103,8 @@ public class DatabaseSeeder {
     private List<Evento> criarEventosAnapolis(User admin, List<User> outrosUsuarios) {
         List<Evento> eventosCriados = new ArrayList<>();
 
-        // Pega usuários comuns para serem donos de alguns eventos, variando os organizadores
+        // Pega usuários comuns para serem donos de alguns eventos, variando os
+        // organizadores
         User organizadorSecundario = outrosUsuarios.isEmpty() ? admin : outrosUsuarios.get(0);
         User organizadorTerciario = outrosUsuarios.size() > 1 ? outrosUsuarios.get(1) : admin;
 
@@ -113,7 +116,8 @@ public class DatabaseSeeder {
         e1.setLocalEvento("Parque Ipiranga - Jundiaí, Anápolis");
         e1.setLatitude(-16.3443);
         e1.setLongitude(-48.9478);
-        e1.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1).withHour(19).withMinute(0)); // Amanhã 19h
+        e1.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(1).withHour(19).withMinute(0)); // Amanhã
+                                                                                                            // 19h
         e1.setJogadoresPorTime(5);
         e1.setTotalPartidasDefinidas(15);
         e1.setCorPrimaria("#0000FF");
@@ -177,7 +181,7 @@ public class DatabaseSeeder {
     private List<Evento> gerarMais25Eventos(User u1, User u2, User u3) {
         List<Evento> extras = new ArrayList<>();
         Random rand = new Random();
-        User[] organizadores = {u1, u2, u3};
+        User[] organizadores = { u1, u2, u3 };
 
         // Dados para geração aleatória
         String[] nomesEventos = {
@@ -219,7 +223,8 @@ public class DatabaseSeeder {
             // Datas variadas nos próximos 10 dias
             int diasFuturos = rand.nextInt(10);
             int hora = 8 + rand.nextInt(14); // Entre 8h e 22h
-            e.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(diasFuturos).withHour(hora).withMinute(0));
+            e.setDataHorarioEvento(
+                    OffsetDateTime.now(ZoneOffset.UTC).plusDays(diasFuturos).withHour(hora).withMinute(0));
 
             e.setJogadoresPorTime(5 + rand.nextInt(7)); // 5 a 11 jogadores
             e.setStatus(StatusEvento.ATIVO);
@@ -236,22 +241,21 @@ public class DatabaseSeeder {
 
     @Transactional
     public void simularTorneioComServices(Evento evento) {
-        //usa o TimeService para buscar os times do evento criado
+        // usa o TimeService para buscar os times do evento criado
         List<Time> times = timeService.listarTimesDoEvento(evento.getId());
 
-        //filtra times jogáveis (exclui o time de espera)
+        // filtra times jogáveis (exclui o time de espera)
         List<Time> timesJogaveis = new ArrayList<>(
                 times.stream()
                         .filter(t -> !t.getTimeDeEspera())
-                        .toList()
-        );
+                        .toList());
 
         if (timesJogaveis.size() < 2) {
             System.out.println("Não há times suficientes para simular partidas.");
             return;
         }
 
-        //fila de desafiantes
+        // fila de desafiantes
         Queue<Time> filaDeTimes = new LinkedList<>(timesJogaveis);
 
         /*
@@ -264,11 +268,13 @@ public class DatabaseSeeder {
         int totalPartidasASimular = 10;
 
         for (int i = 1; i <= totalPartidasASimular; i++) {
-            if (filaDeTimes.isEmpty()) break;
+            if (filaDeTimes.isEmpty())
+                break;
 
             Time timeDesafiante = filaDeTimes.poll();
 
-            System.out.println("\n---Partida " + i + ": " + timeRei.getNome() + " vs " + timeDesafiante.getNome() + "---");
+            System.out.println(
+                    "\n---Partida " + i + ": " + timeRei.getNome() + " vs " + timeDesafiante.getNome() + "---");
 
             // 1. Criar Partida (Service)
             Partida partida = partidaService.criarPartida(evento.getId(), timeRei.getId(), timeDesafiante.getId());
@@ -276,31 +282,34 @@ public class DatabaseSeeder {
             // 2. Iniciar Partida (Service)
             partidaService.iniciarPartida(partida.getId());
 
-            //define quantos gols cada um vai fazer no loop
+            // define quantos gols cada um vai fazer no loop
             int golsRei = random.nextInt(5);
             int golsDesafiante = random.nextInt(5);
-            if (golsRei == golsDesafiante) golsRei++; //evitar empate na simulação
+            if (golsRei == golsDesafiante)
+                golsRei++; // evitar empate na simulação
 
             // 3. Simular Ações de Jogo (Gols/Assistências) via Service
-            //teste do registro de desempenho e cálculo de elo em tempo real
+            // teste do registro de desempenho e cálculo de elo em tempo real
             simularGolsViaService(partida, timeRei, golsRei);
             simularGolsViaService(partida, timeDesafiante, golsDesafiante);
 
             // 4. Finalizar Partida (Service)
-            //o Service vai calcular o vencedor, atualizar status e chamar o RODÍZIO automaticamente
+            // o Service vai calcular o vencedor, atualizar status e chamar o RODÍZIO
+            // automaticamente
             Partida partidaFinalizada = partidaService.finalizarPartida(partida.getId());
 
-            //verificar quem ganhou
+            // verificar quem ganhou
             boolean reiGanhou = partidaFinalizada.getTimeAPlacar() > partidaFinalizada.getTimeBPlacar();
             Time vencedor = reiGanhou ? timeRei : timeDesafiante;
             Time perdedor = reiGanhou ? timeDesafiante : timeRei;
 
-            System.out.println("Placar Final: " + partidaFinalizada.getTimeAPlacar() + " x " + partidaFinalizada.getTimeBPlacar());
+            System.out.println(
+                    "Placar Final: " + partidaFinalizada.getTimeAPlacar() + " x " + partidaFinalizada.getTimeBPlacar());
             System.out.println("Vencedor: " + vencedor.getNome());
             System.out.println("Rodízio automático aplicado pelo Service ao time: " + perdedor.getNome());
 
-            //lógica da fila:
-            //rei continua, perdedor vai para o fim da fila
+            // lógica da fila:
+            // rei continua, perdedor vai para o fim da fila
             timeRei = vencedor;
             filaDeTimes.offer(perdedor);
         }
@@ -313,7 +322,8 @@ public class DatabaseSeeder {
     private void simularGolsViaService(Partida partida, Time time, int totalGols) {
         List<Inscricao> jogadoresDoTime = inscricaoRepository.findByTimeAtualAndEvento(time, partida.getEvento());
 
-        if (jogadoresDoTime.isEmpty()) return;
+        if (jogadoresDoTime.isEmpty())
+            return;
 
         Random random = new Random();
         Set<Long> jogadoresComAcao = new HashSet<>(); // Controla quem já teve ação registrada
@@ -338,7 +348,8 @@ public class DatabaseSeeder {
         for (Inscricao inscricao : jogadoresDoTime) {
             User jogador = inscricao.getJogador();
 
-            // Se o jogador ainda não teve ação nessa partida, damos uma ação de defesa ou falta
+            // Se o jogador ainda não teve ação nessa partida, damos uma ação de defesa ou
+            // falta
             if (!jogadoresComAcao.contains(jogador.getId())) {
                 int acaoAleatoria = random.nextInt(100);
 
@@ -369,7 +380,8 @@ public class DatabaseSeeder {
         // 5 Pernas
         for (int i = 1; i <= 5; i++) {
             String foto = carregarProximaImagem();
-            lista.add(criarUser("Perna de Pau " + i, "perna" + i + "@teste.com", 200, NivelHabilidade.PERNA_DE_PAU, foto));
+            lista.add(criarUser("Perna de Pau " + i, "perna" + i + "@teste.com", 200, NivelHabilidade.PERNA_DE_PAU,
+                    foto));
         }
         return lista;
     }
@@ -385,7 +397,8 @@ public class DatabaseSeeder {
         u.setNivelHabilidade(nivel);
         u.setDataCriacao(LocalDateTime.now());
 
-        // Se a foto foi carregada com sucesso, usa ela. Se não, gera um avatar dinâmico.
+        // Se a foto foi carregada com sucesso, usa ela. Se não, gera um avatar
+        // dinâmico.
         if (fotoUrl != null) {
             u.setFotoPerfil(fotoUrl);
         } else {
@@ -429,7 +442,8 @@ public class DatabaseSeeder {
         try {
             ClassPathResource imgFile = new ClassPathResource(caminho);
             if (!imgFile.exists()) {
-                // Se não achar o arquivo, retorna null para cair no fallback (gerador de avatar)
+                // Se não achar o arquivo, retorna null para cair no fallback (gerador de
+                // avatar)
                 return null;
             }
             byte[] imageBytes = StreamUtils.copyToByteArray(imgFile.getInputStream());
@@ -456,7 +470,7 @@ public class DatabaseSeeder {
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
 
-            g2d.setColor(new Color((int)(Math.random() * 0x1000000)));
+            g2d.setColor(new Color((int) (Math.random() * 0x1000000)));
             g2d.fillRect(0, 0, width, height);
 
             g2d.setColor(Color.WHITE);
@@ -476,48 +490,51 @@ public class DatabaseSeeder {
         }
     }
 
-  // --- NOVO MÉTODO SOLICITADO: Cria um cenário isolado (Jogadores + Evento + Inscrições) ---
-  private void criarCenarioPersonalizado() {
-    System.out.println(">>> Iniciando criação de Cenário Personalizado...");
+    // --- NOVO MÉTODO SOLICITADO: Cria um cenário isolado (Jogadores + Evento +
+    // Inscrições) ---
+    private void criarCenarioPersonalizado() {
+        System.out.println(">>> Iniciando criação de Cenário Personalizado...");
 
-    // 1. Criar o Organizador do Evento
-    // Gera um avatar automático passando null na foto
-    User organizador = (User) authorizationService.loadUserByUsername("admin@gmail.com");
+        // 1. Criar o Organizador do Evento
+        // Gera um avatar automático passando null na foto
+        User organizador = (User) authorizationService.loadUserByUsername("admin@gmail.com");
 
-    // 2. Criar o Evento
-    Evento evento = new Evento();
-    evento.setNome("AQUIIIIII");
-    evento.setLocalEvento("Arena Code - Anápolis");
-    evento.setLatitude(-16.3250); // Coordenada ilustrativa
-    evento.setLongitude(-48.9550);
-    evento.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7).withHour(20).withMinute(0));
-    evento.setJogadoresPorTime(5);
-    evento.setTotalPartidasDefinidas(5);
-    evento.setStatus(StatusEvento.ATIVO);
+        // 2. Criar o Evento
+        Evento evento = new Evento();
+        evento.setNome("AQUIIIIII");
+        evento.setLocalEvento("Arena Code - Anápolis");
+        evento.setLatitude(-16.3250); // Coordenada ilustrativa
+        evento.setLongitude(-48.9550);
+        evento.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(7).withHour(20).withMinute(0));
+        evento.setJogadoresPorTime(5);
+        evento.setTotalPartidasDefinidas(5);
+        evento.setStatus(StatusEvento.ATIVO);
 
-    // Salva o evento definindo o organizador (Service aplica regras de negócio se houver)
-    Evento eventoSalvo = eventoService.salvarEvento(evento, organizador);
-    System.out.println("ENVENTO IDDDDDDDDDD" + eventoSalvo.getId());
+        // Salva o evento definindo o organizador (Service aplica regras de negócio se
+        // houver)
+        Evento eventoSalvo = eventoService.salvarEvento(evento, organizador);
+        System.out.println("ENVENTO IDDDDDDDDDD" + eventoSalvo.getId());
 
-    // 3. Criar Jogadores e gerar Inscrição para cada um
-    int totalJogadores = 15; // Ex: Suficiente para 3 times de 5
+        // 3. Criar Jogadores e gerar Inscrição para cada um
+        int totalJogadores = 15; // Ex: Suficiente para 3 times de 5
 
-    for (int i = 1; i <= totalJogadores; i++) {
-      // Cria o usuário (Jogador)
-      User jogador = criarUser(
-        "Jogador Teste " + i,
-        "jogador.teste" + i + "@gmail.com",
-        1000 + (i * 50), // Varia o ELO ligeiramente
-        (i % 2 == 0) ? NivelHabilidade.MEDIANO : NivelHabilidade.PERNA_DE_PAU, // Intercala níveis
-        null // Gera avatar automático
-      );
+        for (int i = 1; i <= totalJogadores; i++) {
+            // Cria o usuário (Jogador)
+            User jogador = criarUser(
+                    "Jogador Teste " + i,
+                    "jogador.teste" + i + "@gmail.com",
+                    1000 + (i * 50), // Varia o ELO ligeiramente
+                    (i % 2 == 0) ? NivelHabilidade.MEDIANO : NivelHabilidade.PERNA_DE_PAU, // Intercala níveis
+                    null // Gera avatar automático
+            );
 
-      // Cria a inscrição para este jogador no evento
-      inscreverUsuario(jogador, eventoSalvo);
+            // Cria a inscrição para este jogador no evento
+            inscreverUsuario(jogador, eventoSalvo);
+        }
+
+        System.out.println(
+                ">>> Cenário criado: Evento '" + eventoSalvo.getNome() + "' com " + totalJogadores + " inscritos.");
     }
-
-    System.out.println(">>> Cenário criado: Evento '" + eventoSalvo.getNome() + "' com " + totalJogadores + " inscritos.");
-  }
 
     /**
      * Cria um cenário de demonstração com time de espera (reserva) garantido.
@@ -539,23 +556,23 @@ public class DatabaseSeeder {
         evento.setStatus(StatusEvento.ATIVO);
 
         Evento eventoSalvo = eventoService.salvarEvento(evento, organizador);
-        System.out.println("Evento de demonstração criado: " + eventoSalvo.getNome() + " (id=" + eventoSalvo.getId() + ")");
+        System.out.println(
+                "Evento de demonstração criado: " + eventoSalvo.getNome() + " (id=" + eventoSalvo.getId() + ")");
 
         // Calcula número de jogadores para garantir sobras (reserva)
         int jogadoresPorTime = eventoSalvo.getJogadoresPorTime() != null ? eventoSalvo.getJogadoresPorTime() : 5;
         int numTimesAtivos = 3; // 3 times principais em campo
-        int sobraReserva = 3;   // 3 jogadores no banco (time reserva)
+        int sobraReserva = 3; // 3 jogadores no banco (time reserva)
         // Total: 3 times * 5 jogadores + 3 reserva = 18 jogadores
         int totalJogadores = jogadoresPorTime * numTimesAtivos + sobraReserva;
 
         for (int i = 1; i <= totalJogadores; i++) {
             User jogador = criarUser(
-                "Demo Jogador " + i,
-                "demo.jogador" + i + "@example.com",
-                1000 + i * 10,
-                (i % 2 == 0) ? NivelHabilidade.MEDIANO : NivelHabilidade.PERNA_DE_PAU,
-                null
-            );
+                    "Demo Jogador " + i,
+                    "demo.jogador" + i + "@example.com",
+                    1000 + i * 10,
+                    (i % 2 == 0) ? NivelHabilidade.MEDIANO : NivelHabilidade.PERNA_DE_PAU,
+                    null);
             inscreverUsuario(jogador, eventoSalvo);
         }
 
@@ -571,12 +588,14 @@ public class DatabaseSeeder {
             System.out.println("Jogadores no banco: " + inscritosNoBanco.size());
             inscritosNoBanco.forEach(ins -> System.out.println(" - " + ins.getJogador().getNome()));
         } else {
-                System.out.println("Nenhum time de espera encontrado para o evento de demonstração.");
+            System.out.println("Nenhum time de espera encontrado para o evento de demonstração.");
         }
-
-            // Exibe resumo: queremos 4 times no total (3 principais + 1 reserva)
-            long totalTimes = timeRepository.countByEvento(eventoSalvo);
-            System.out.println(">>> Cenário de demonstração com reserva criado com " + totalJogadores + " inscritos.");
-            System.out.println(">>> Total de times criados para o evento: " + totalTimes + " (esperado: 4)");
+        
+        // Exibe resumo: queremos 4 times no total (3 principais + 1 reserva)
+        long totalDePartidas = eventoSalvo.getTotalPartidasDefinidas() != null ? eventoSalvo.getTotalPartidasDefinidas() : 0;
+        long totalTimes = timeRepository.countByEvento(eventoSalvo);
+        System.out.println(">>> Cenário de demonstração com reserva criado com " + totalJogadores + " inscritos.");
+        System.out.println(">>> Total de times criados para o evento: " + totalTimes + " (esperado: 4)");
+        System.out.println(">>> Total de partidas para o evento: " + totalDePartidas + " (esperado: 6)");
     }
 }

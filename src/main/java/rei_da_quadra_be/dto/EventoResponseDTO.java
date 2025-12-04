@@ -26,6 +26,7 @@ public class EventoResponseDTO {
     private String usuarioNome;
     private Boolean isOrganizer = false;
     private String status;
+    private Integer totalPartidasDefinidas;
 
     public static EventoResponseDTO fromEvento(Evento evento) {
         EventoResponseDTO dto = new EventoResponseDTO();
@@ -38,6 +39,10 @@ public class EventoResponseDTO {
             dto.setUsuarioId(evento.getUsuario().getId());
             dto.setUsuarioLogin(evento.getUsuario().getEmail());
             dto.setUsuarioNome(evento.getUsuario().getNome());
+        }
+
+        if(evento.getTotalPartidasDefinidas() != null) {
+            dto.setTotalPartidasDefinidas(evento.getTotalPartidasDefinidas());
         }
 
         dto.setLatitude(evento.getLatitude());
