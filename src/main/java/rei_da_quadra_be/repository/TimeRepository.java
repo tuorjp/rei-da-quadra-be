@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface TimeRepository extends JpaRepository<Time, Long> {
   Optional<Time> findByEventoAndTimeDeEsperaTrue(Evento evento);
   List<Time> findByEventoId(Long eventoId);
+  long countByEvento(Evento evento);
 }

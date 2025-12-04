@@ -521,8 +521,6 @@ public class DatabaseSeeder {
 
     /**
      * Cria um cenário de demonstração com time de espera (reserva) garantido.
-     * Não é chamado automaticamente pelo seeder principal — chame manualmente quando
-     * quiser popular o banco com um evento específico para demonstração.
      */
     private void criarCenarioComReserva() {
         System.out.println(">>> Criando cenário com reserva...");
@@ -536,7 +534,8 @@ public class DatabaseSeeder {
         evento.setLongitude(-48.9500);
         evento.setDataHorarioEvento(OffsetDateTime.now(ZoneOffset.UTC).plusDays(2).withHour(18).withMinute(0));
         evento.setJogadoresPorTime(5);
-        evento.setTotalPartidasDefinidas(8);
+        // Definido para 6 partidas conforme requisito (seis partidas no evento)
+        evento.setTotalPartidasDefinidas(6);
         evento.setStatus(StatusEvento.ATIVO);
 
         Evento eventoSalvo = eventoService.salvarEvento(evento, organizador);
@@ -544,8 +543,9 @@ public class DatabaseSeeder {
 
         // Calcula número de jogadores para garantir sobras (reserva)
         int jogadoresPorTime = eventoSalvo.getJogadoresPorTime() != null ? eventoSalvo.getJogadoresPorTime() : 5;
-        int numTimesAtivos = 3; // 3 times em campo
-        int sobraReserva = 2;   // 2 jogadores no banco
+        int numTimesAtivos = 3; // 3 times principais em campo
+        int sobraReserva = 3;   // 3 jogadores no banco (time reserva)
+        // Total: 3 times * 5 jogadores + 3 reserva = 18 jogadores
         int totalJogadores = jogadoresPorTime * numTimesAtivos + sobraReserva;
 
         for (int i = 1; i <= totalJogadores; i++) {
@@ -571,9 +571,12 @@ public class DatabaseSeeder {
             System.out.println("Jogadores no banco: " + inscritosNoBanco.size());
             inscritosNoBanco.forEach(ins -> System.out.println(" - " + ins.getJogador().getNome()));
         } else {
-            System.out.println("Nenhum time de espera encontrado para o evento de demonstração.");
+                System.out.println("Nenhum time de espera encontrado para o evento de demonstração.");
         }
 
-        System.out.println(">>> Cenário de demonstração com reserva criado com " + totalJogadores + " inscritos.");
+            // Exibe resumo: queremos 4 times no total (3 principais + 1 reserva)
+            long totalTimes = timeRepository.countByEvento(eventoSalvo);
+            System.out.println(">>> Cenário de demonstração com reserva criado com " + totalJogadores + " inscritos.");
+            System.out.println(">>> Total de times criados para o evento: " + totalTimes + " (esperado: 4)");
     }
 }
