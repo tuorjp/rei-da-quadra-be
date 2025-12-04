@@ -59,7 +59,7 @@ public class TimeController {
     if (time.getInscricoes() != null) {
       List<JogadorDTO> jogadoresDto = time.getInscricoes().stream()
         .map(inscricao -> new JogadorDTO(
-          inscricao.getId(),
+          inscricao.getJogador().getId(),
           inscricao.getEvento().getId(),
           time.getId(),
           inscricao.getJogador().getNome(),
