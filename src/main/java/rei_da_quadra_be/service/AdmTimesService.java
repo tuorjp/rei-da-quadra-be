@@ -147,7 +147,7 @@ public class AdmTimesService {
 
   //atualiza pontuação e processa o rodízio após uma partida.
   @Transactional
-  public void processarFimDePartida(Long partidaId, Long timeVencedorId) {
+  public Long processarFimDePartida(Long partidaId, Long timeVencedorId) {
     Partida partida = partidaRepository.findById(partidaId)
       .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
     Evento evento = partida.getEvento();
@@ -166,7 +166,61 @@ public class AdmTimesService {
     jogadoresTimeB.forEach(this::incrementarPartidaJogada);
 
     // 3. Realizar Rodízio (Perdedor sai <-> Reserva entra)
-    rodizioDeJogadores(evento, timePerdedor);
+    Time timeEspera = timeRepository
+      .findByEventoAndTimeDeEsperaTrue(evento)
+      .orElseThrow(() -> new TimeDeEsperaNaoConfiguradoException("Time de espera não configurado"));
+
+    List<Inscricao> jogadoresNoBanco = inscricaoRepository.findByTimeAtualAndEvento(timeEspera, evento);
+
+    // Se houver jogadores no banco, executa rodízio padrão imediatamente para atualizar os times
+    if (!jogadoresNoBanco.isEmpty()) {
+      rodizioDeJogadores(evento, timePerdedor);
+    }
+
+    // Agora escolhe o próximo desafiante entre os times ativos (não reservas), excluindo o vencedor.
+    List<Time> timesAtivos = timeRepository.findByEventoId(evento.getId())
+      .stream()
+      .filter(t -> !t.getTimeDeEspera() && t.getStatus() == StatusTime.ATIVO)
+      .toList();
+
+    // Se só existir o vencedor como time ativo, retorna o perdedor original como fallback
+    List<Time> candidatos = timesAtivos.stream()
+      .filter(t -> !t.getId().equals(timeVencedorId))
+      .toList();
+
+    if (candidatos.isEmpty()) {
+      return timePerdedor.getId();
+    }
+
+    // Verifica se todos os times não-reserva já jogaram ao menos uma vez
+    boolean todosJaJogarom = timesAtivos.stream().allMatch(t ->
+      inscricaoRepository.findByTimeAtualAndEvento(t, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum() > 0
+    );
+
+    // Se nem todos jogaram, limitamos candidatos aos que jogaram menos (partidasJogadas == 0 preferencialmente)
+    List<Time> candidatosFiltrados = candidatos;
+    if (!todosJaJogarom) {
+      List<Time> aindaNaoJogaram = candidatos.stream()
+        .filter(t -> inscricaoRepository.findByTimeAtualAndEvento(t, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum() == 0)
+        .toList();
+      if (!aindaNaoJogaram.isEmpty()) {
+        candidatosFiltrados = aindaNaoJogaram;
+      }
+    }
+
+    // Escolher o time com menor soma de partidas jogadas (prioriza quem jogou menos)
+    Time escolhido = candidatosFiltrados.stream()
+      .min((t1, t2) -> {
+        int s1 = inscricaoRepository.findByTimeAtualAndEvento(t1, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum();
+        int s2 = inscricaoRepository.findByTimeAtualAndEvento(t2, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum();
+        return Integer.compare(s1, s2);
+      })
+      .orElse(timePerdedor);
+
+    // Se todos já jogaram e o banco ainda está vazio, o time reserva só entra quando todos os não-reserva tiverem jogado.
+    // A lógica acima já garante que reserva não será escolhido entre 'timesAtivos' porque 'timeEspera' foi excluído.
+
+    return escolhido.getId();
   }
 
   //lógica central do rodízio com tickets

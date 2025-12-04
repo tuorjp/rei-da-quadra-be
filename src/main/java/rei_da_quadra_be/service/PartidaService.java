@@ -164,9 +164,25 @@ public class PartidaService {
       idVencedor = partida.getTimeA().getId();
     }
 
-    admTimesService.processarFimDePartida(partida.getId(), idVencedor);
+    // Processar rodízio (move jogadores entre time de espera e perdedor)
+    Long proximoDesafianteId = admTimesService.processarFimDePartida(partida.getId(), idVencedor);
 
-    return partida;
+    // Determina vencedor e busca o time desafiante (pode ser o perdedor original ou outro time escolhido)
+    Time vencedor = partida.getTimeA().getId().equals(idVencedor) ? partida.getTimeA() : partida.getTimeB();
+    Time desafiante = timeService.buscarPorId(proximoDesafianteId);
+
+    // Cria nova partida com vencedor como Time A e desafiante como Time B
+    Partida nova = new Partida();
+    nova.setEvento(partida.getEvento());
+    nova.setTimeA(vencedor);
+    nova.setTimeB(desafiante);
+    nova.setTimeAPlacar(0);
+    nova.setTimeBPlacar(0);
+    nova.setStatus(StatusPartida.EM_ANDAMENTO);
+
+    Partida partidaIniciada = partidaRepository.save(nova);
+
+    return partidaIniciada;
   }
 
   /* AUXILIARES */
