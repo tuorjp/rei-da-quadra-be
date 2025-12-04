@@ -26,13 +26,16 @@ public class AdmTimesService {
 
   private final HistoricoPontuacaoService historicoService;
 
+  // Constante K do Elo (pode tornar configurável depois)
+  private static final int K_ELO = 32;
+
   //cria os times de um evento que foi criado
   //nenhuma partida ocorreu ainda
   @Transactional
   public void montarTimesInicial(Long eventoId) {
     Evento evento = eventoRepository
-      .findById(eventoId)
-      .orElseThrow(() -> new EventoNaoEncontradoException("Evento não encontrado"));
+            .findById(eventoId)
+            .orElseThrow(() -> new EventoNaoEncontradoException("Evento não encontrado"));
 
     List<Inscricao> inscricoes = inscricaoRepository.findByEventoId(eventoId);
     int totalInscritos = inscricoes.size();
@@ -80,17 +83,17 @@ public class AdmTimesService {
   private void distribuirJogadoresNosTimes(List<Inscricao> todosInscritos, List<Time> timesAtivos, Time timeEspera, int maxPorTime) {
     //separa os Craques
     List<Inscricao> craques = todosInscritos
-      .stream()
-      .filter(i -> i.getJogador().getNivelHabilidade() == NivelHabilidade.CRAQUE)
-      .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) //elo decrescente
-      .toList();
+            .stream()
+            .filter(i -> i.getJogador().getNivelHabilidade() == NivelHabilidade.CRAQUE)
+            .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) //elo decrescente
+            .toList();
 
     //medianos e pernas-de-pau
     List<Inscricao> outros = todosInscritos
-      .stream()
-      .filter(i -> i.getJogador().getNivelHabilidade() != NivelHabilidade.CRAQUE)
-      .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) //elo decrescente
-      .toList();
+            .stream()
+            .filter(i -> i.getJogador().getNivelHabilidade() != NivelHabilidade.CRAQUE)
+            .sorted(Comparator.comparingInt(i -> -i.getJogador().getPontosHabilidade())) //elo decrescente
+            .toList();
 
     //fila auxiliar para distribuição
     Queue<Inscricao> filaCraques = new LinkedList<>(craques);
@@ -149,7 +152,7 @@ public class AdmTimesService {
   @Transactional
   public Long processarFimDePartida(Long partidaId, Long timeVencedorId) {
     Partida partida = partidaRepository.findById(partidaId)
-      .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
+            .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
     Evento evento = partida.getEvento();
 
     // 1. Identificar Perdedor
@@ -167,8 +170,8 @@ public class AdmTimesService {
 
     // 3. Realizar Rodízio (Perdedor sai <-> Reserva entra)
     Time timeEspera = timeRepository
-      .findByEventoAndTimeDeEsperaTrue(evento)
-      .orElseThrow(() -> new TimeDeEsperaNaoConfiguradoException("Time de espera não configurado"));
+            .findByEventoAndTimeDeEsperaTrue(evento)
+            .orElseThrow(() -> new TimeDeEsperaNaoConfiguradoException("Time de espera não configurado"));
 
     List<Inscricao> jogadoresNoBanco = inscricaoRepository.findByTimeAtualAndEvento(timeEspera, evento);
 
@@ -179,14 +182,14 @@ public class AdmTimesService {
 
     // Agora escolhe o próximo desafiante entre os times ativos (não reservas), excluindo o vencedor.
     List<Time> timesAtivos = timeRepository.findByEventoId(evento.getId())
-      .stream()
-      .filter(t -> !t.getTimeDeEspera() && t.getStatus() == StatusTime.ATIVO)
-      .toList();
+            .stream()
+            .filter(t -> !t.getTimeDeEspera() && t.getStatus() == StatusTime.ATIVO)
+            .toList();
 
     // Se só existir o vencedor como time ativo, retorna o perdedor original como fallback
     List<Time> candidatos = timesAtivos.stream()
-      .filter(t -> !t.getId().equals(timeVencedorId))
-      .toList();
+            .filter(t -> !t.getId().equals(timeVencedorId))
+            .toList();
 
     if (candidatos.isEmpty()) {
       return timePerdedor.getId();
@@ -194,15 +197,15 @@ public class AdmTimesService {
 
     // Verifica se todos os times não-reserva já jogaram ao menos uma vez
     boolean todosJaJogarom = timesAtivos.stream().allMatch(t ->
-      inscricaoRepository.findByTimeAtualAndEvento(t, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum() > 0
+            inscricaoRepository.findByTimeAtualAndEvento(t, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum() > 0
     );
 
     // Se nem todos jogaram, limitamos candidatos aos que jogaram menos (partidasJogadas == 0 preferencialmente)
     List<Time> candidatosFiltrados = candidatos;
     if (!todosJaJogarom) {
       List<Time> aindaNaoJogaram = candidatos.stream()
-        .filter(t -> inscricaoRepository.findByTimeAtualAndEvento(t, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum() == 0)
-        .toList();
+              .filter(t -> inscricaoRepository.findByTimeAtualAndEvento(t, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum() == 0)
+              .toList();
       if (!aindaNaoJogaram.isEmpty()) {
         candidatosFiltrados = aindaNaoJogaram;
       }
@@ -210,12 +213,12 @@ public class AdmTimesService {
 
     // Escolher o time com menor soma de partidas jogadas (prioriza quem jogou menos)
     Time escolhido = candidatosFiltrados.stream()
-      .min((t1, t2) -> {
-        int s1 = inscricaoRepository.findByTimeAtualAndEvento(t1, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum();
-        int s2 = inscricaoRepository.findByTimeAtualAndEvento(t2, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum();
-        return Integer.compare(s1, s2);
-      })
-      .orElse(timePerdedor);
+            .min((t1, t2) -> {
+              int s1 = inscricaoRepository.findByTimeAtualAndEvento(t1, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum();
+              int s2 = inscricaoRepository.findByTimeAtualAndEvento(t2, evento).stream().mapToInt(Inscricao::getPartidasJogadas).sum();
+              return Integer.compare(s1, s2);
+            })
+            .orElse(timePerdedor);
 
     // Se todos já jogaram e o banco ainda está vazio, o time reserva só entra quando todos os não-reserva tiverem jogado.
     // A lógica acima já garante que reserva não será escolhido entre 'timesAtivos' porque 'timeEspera' foi excluído.
@@ -227,8 +230,8 @@ public class AdmTimesService {
   private void rodizioDeJogadores(Evento evento, Time timePerdedor) {
     //busca o time de espera do evento
     Time timeEspera = timeRepository
-      .findByEventoAndTimeDeEsperaTrue(evento)
-      .orElseThrow(() -> new TimeDeEsperaNaoConfiguradoException("Time de espera não configurado"));
+            .findByEventoAndTimeDeEsperaTrue(evento)
+            .orElseThrow(() -> new TimeDeEsperaNaoConfiguradoException("Time de espera não configurado"));
 
     List<Inscricao> jogadoresNoBanco = inscricaoRepository.findByTimeAtualAndEvento(timeEspera, evento);
     List<Inscricao> jogadoresNoTimePerdedor = inscricaoRepository.findByTimeAtualAndEvento(timePerdedor, evento);
@@ -243,12 +246,12 @@ public class AdmTimesService {
     //Regra de Ticket: Prioridade para quem jogou MENOS.
     //Desempate: Nivel de Habilidade (para equilibrar) ou Ordem de Chegada (ID).
     List<Inscricao> quemEntra = jogadoresNoBanco
-      .stream()
-      .sorted(Comparator
-        .comparingInt(Inscricao::getPartidasJogadas) //menor número de partidas primeiro (Ticket)
-        .thenComparingInt(i -> i.getJogador().getPontosHabilidade())) //desempate por elo
-      .limit(tamanhoDoTime)
-      .toList();
+            .stream()
+            .sorted(Comparator
+                    .comparingInt(Inscricao::getPartidasJogadas) //menor número de partidas primeiro (Ticket)
+                    .thenComparingInt(i -> i.getJogador().getPontosHabilidade())) //desempate por elo
+            .limit(tamanhoDoTime)
+            .toList();
 
     //QUEM SAI (Sai do Time Perdedor → Vai para o Banco)
     //a regra diz "jogadores do time perdedor serão selecionados para compor time de reserva".
@@ -259,9 +262,9 @@ public class AdmTimesService {
     // Seleciona os jogadores do time perdedor que irão para o banco.
     // Prioriza enviar ao banco os jogadores que já jogaram mais (descendente), para descanso.
     List<Inscricao> quemSai = jogadoresNoTimePerdedor.stream()
-      .sorted(Comparator.comparingInt(Inscricao::getPartidasJogadas).reversed())
-      .limit(numEntrando)
-      .toList();
+            .sorted(Comparator.comparingInt(Inscricao::getPartidasJogadas).reversed())
+            .limit(numEntrando)
+            .toList();
 
     //executa a troca no banco de dados (quantidades correspondentes)
     for (Inscricao entrando : quemEntra) {
@@ -281,36 +284,131 @@ public class AdmTimesService {
   //metodo para atualizar pontuação individual chamado a cada gol/ação do tipo TipoAcaoEmJogo
   @Transactional
   public void computarAcaoJogador(Partida partida, Long jogadorId, TipoAcaoEmJogo tipoAcao) {
-      User user = userRepository.findById(jogadorId).orElseThrow();
+    User user = userRepository.findById(jogadorId).orElseThrow();
 
-      int pontosGanhos = 0;
-      switch (tipoAcao) {
-          case GOL:
-              pontosGanhos = 15;
-              break;
-          case ASSISTENCIA:
-              pontosGanhos = 10;
-              break;
-          case DEFESA:
-              pontosGanhos = 5;
-              break;
-          case FALTA:
-              pontosGanhos = -15;
-              break;
-          case IMPEDIMENTO:
-              pontosGanhos = -5;
-              break;
+    // pontos de scout como já existentes (mantidos)
+    int pontosGanhos = switch (tipoAcao) {
+      case GOL -> 15;
+      case ASSISTENCIA -> 10;
+      case DEFESA -> 5;
+      case FALTA -> -15;
+      case IMPEDIMENTO -> -5;
+    };
+
+    // Registrar a alteração de scout (como você já fazia)
+    historicoService.registrarAlteracao(user, partida, tipoAcao, pontosGanhos);
+
+    // ------------------------
+    // Determinar Sa (0 ou 1)
+    // ------------------------
+    int sa;
+    switch (tipoAcao) {
+      case GOL:
+      case ASSISTENCIA:
+      case DEFESA:
+        sa = 1;
+        break;
+      case FALTA:
+      case IMPEDIMENTO:
+      default:
+        sa = 0;
+    }
+
+    // ------------------------
+    // Encontrar Inscricao do jogador para este evento (para identificar o time atual)
+    // ------------------------
+    Evento evento = partida.getEvento();
+
+    Optional<Inscricao> inscricaoOpt = inscricaoRepository.findByEventoId(evento.getId())
+            .stream()
+            .filter(i -> i.getJogador() != null && i.getJogador().getId().equals(jogadorId))
+            .findFirst();
+
+    // pega o time do jogador (pode ser null se não estiver em nenhum time)
+    Time timeDoJogador = inscricaoOpt.map(Inscricao::getTimeAtual).orElse(null);
+
+    // ------------------------
+    // Determinar time adversário (enemy team). Se jogador estiver em TimeA -> enemy = TimeB e vice-versa.
+    // Se não estiver em nenhum dos dois, vamos usar média dos jogadores de ambos os times.
+    // ------------------------
+    Time enemyTime = null;
+    if (timeDoJogador != null) {
+      if (partida.getTimeA() != null && timeDoJogador.getId().equals(partida.getTimeA().getId())) {
+        enemyTime = partida.getTimeB();
+      } else if (partida.getTimeB() != null && timeDoJogador.getId().equals(partida.getTimeB().getId())) {
+        enemyTime = partida.getTimeA();
       }
+    }
 
-      historicoService.registrarAlteracao(user, partida, tipoAcao, pontosGanhos);
+    // ------------------------
+    // Calcular Rb (média simples do time adversário)
+    // ------------------------
+    double rb;
+    if (enemyTime != null) {
+      List<Inscricao> inscritosEnemy = inscricaoRepository.findByTimeAtualAndEvento(enemyTime, evento);
+      rb = inscritosEnemy.stream()
+              .mapToInt(i -> Optional.ofNullable(i.getJogador().getPontosHabilidade()).orElse(0))
+              .average()
+              .orElse(Double.NaN);
+    } else {
+      // jogador não pertence a TimeA nem TimeB -> considerar média de ambos os times (A + B)
+      List<Inscricao> inscritosA = partida.getTimeA() != null ? inscricaoRepository.findByTimeAtualAndEvento(partida.getTimeA(), evento) : Collections.emptyList();
+      List<Inscricao> inscritosB = partidoListOrEmpty(partida.getTimeB(), evento);
+      List<Inscricao> combined = new ArrayList<>();
+      combined.addAll(inscritosA);
+      combined.addAll(inscritosB);
+      rb = combined.stream()
+              .mapToInt(i -> Optional.ofNullable(i.getJogador().getPontosHabilidade()).orElse(0))
+              .average()
+              .orElse(Double.NaN);
+    }
 
-      // Verifica evolução de nível
-      if (user.getPontosHabilidade() > 2400) user.setNivelHabilidade(NivelHabilidade.CRAQUE);
-      else if (user.getPontosHabilidade() > 800) user.setNivelHabilidade(NivelHabilidade.MEDIANO);
-      else user.setNivelHabilidade(NivelHabilidade.PERNA_DE_PAU);
+    // se não houver jogadores do adversário (caso extremo), usa Ra para evitar comportamento estranho => Ea ~= 0.5
+    int raInt = Optional.ofNullable(user.getPontosHabilidade()).orElse(0);
+    double ra = (double) raInt;
+    if (Double.isNaN(rb)) {
+      rb = ra;
+    }
 
-      userRepository.save(user);
+    // ------------------------
+    // Calcular Ea (expectativa)
+    // Ea = 1 / (1 + 10^((Rb - Ra) / 400))
+    // ------------------------
+    double ea = 1.0 / (1.0 + Math.pow(10.0, (rb - ra) / 400.0));
+
+    // ------------------------
+    // Aplicar fórmula Elo:
+    // R'a = Ra + K * (Sa - Ea)
+    // ------------------------
+    double novoRaDouble = ra + K_ELO * (sa - ea);
+
+    // converter para inteiro (pois setPontosHabilidade espera Integer)
+    int novoRaInt = (int) Math.round(novoRaDouble);
+
+    // garantir que não fique negativo (opcional)
+    if (novoRaInt < 0) novoRaInt = 0;
+
+    // registrar variação de elo no histórico (diferença)
+    int deltaElo = novoRaInt - raInt;
+    historicoService.registrarAlteracao(user, partida, tipoAcao, deltaElo);
+
+    // atualizar o usuário com o novo rating (Integer)
+    user.setPontosHabilidade(novoRaInt);
+
+    // Verifica evolução de nível (baseado no novoRaInt)
+    if (novoRaInt > 2400) user.setNivelHabilidade(NivelHabilidade.CRAQUE);
+    else if (novoRaInt > 800) user.setNivelHabilidade(NivelHabilidade.MEDIANO);
+    else user.setNivelHabilidade(NivelHabilidade.PERNA_DE_PAU);
+
+    userRepository.save(user);
   }
+
+  // helper para evitar duplicação (tratamento nulo)
+  private List<Inscricao> partidoListOrEmpty(Time time, Evento evento) {
+    if (time == null) return Collections.emptyList();
+    return inscricaoRepository.findByTimeAtualAndEvento(time, evento);
+  }
+
 
   //métodos auxiliares
   private void alocarJogador(Inscricao inscricao, Time time) {
@@ -330,11 +428,11 @@ public class AdmTimesService {
 
   public boolean jogadorEstaNoTime(Long eventoId, Long timeId, Long jogadorId) {
     return inscricaoRepository.findByEventoId(eventoId)
-      .stream()
-      .anyMatch(i ->
-        i.getJogador().getId().equals(jogadorId) &&
-          i.getTimeAtual() != null &&
-          i.getTimeAtual().getId().equals(timeId)
-      );
+            .stream()
+            .anyMatch(i ->
+                    i.getJogador().getId().equals(jogadorId) &&
+                            i.getTimeAtual() != null &&
+                            i.getTimeAtual().getId().equals(timeId)
+            );
   }
 }
