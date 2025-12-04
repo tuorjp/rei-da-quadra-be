@@ -56,6 +56,13 @@ public class PartidaController {
     return ResponseEntity.ok().build();
   }
 
+  @Operation(summary = "Remove uma ação registrada (desconta gol/assistência/defesa)")
+  @PostMapping(value = "/partidas/{id}/acoes/remover", produces = MediaType.APPLICATION_JSON_VALUE)
+  public ResponseEntity<Void> removerAcao(@PathVariable Long id, @RequestBody @Valid AcaoJogoDTO dto) {
+    partidaService.removerAcao(id, dto.getJogadorId(), dto.getTipoAcao());
+    return ResponseEntity.ok().build();
+  }
+
   @Operation(summary = "Finaliza a partida e executa o rodízio de times")
   @ApiResponses(value = {
     @ApiResponse(responseCode = "200", description = "Partida finalizada e rodízio aplicado"),
@@ -74,8 +81,10 @@ public class PartidaController {
     dto.setDataPartida(p.getDataPartida());
     dto.setStatus(p.getStatus().toString());
     dto.setTimeANome(p.getTimeA().getNome());
+    if (p.getTimeA() != null) dto.setTimeAId(p.getTimeA().getId());
     dto.setTimeAPlacar(p.getTimeAPlacar());
     dto.setTimeBNome(p.getTimeB().getNome());
+    if (p.getTimeB() != null) dto.setTimeBId(p.getTimeB().getId());
     dto.setTimeBPlacar(p.getTimeBPlacar());
     return dto;
   }

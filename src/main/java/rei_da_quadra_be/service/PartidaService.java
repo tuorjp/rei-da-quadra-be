@@ -39,6 +39,7 @@ public class PartidaService {
     Evento evento = eventoService.buscarEventoPorId(eventoId)
       .orElseThrow(() -> new RuntimeException("Evento não encontrado"));
 
+    System.out.println("Criando partida entre times " + timeAId + " e " + timeBId + " para o evento " + eventoId);
     Time timeA = timeService.buscarPorId(timeAId);
     Time timeB = timeService.buscarPorId(timeBId);
 
@@ -94,6 +95,50 @@ public class PartidaService {
     participacaoRepository.save(desempenho);
 
     admTimesService.computarAcaoJogador(partida, jogadorId, acao);
+  }
+
+  // Remove uma ação (desconta gols/assistências/defesas) — não reverte histórico de pontuação
+  @Transactional
+  public void removerAcao(Long partidaId, Long jogadorId, TipoAcaoEmJogo acao) {
+    Partida partida = buscarPorId(partidaId);
+
+    if (partida.getStatus() != StatusPartida.EM_ANDAMENTO) {
+      throw new RegraDeNegocioException("Só é possível remover ações em partidas em andamento.");
+    }
+
+    ParticipacaoDesempenho desempenho = participacaoRepository.findByPartidaIdAndJogadorId(partida.getId(), jogadorId)
+      .orElseThrow(() -> new RegraDeNegocioException("Nenhuma participação encontrada para esse jogador nesta partida."));
+
+    switch (acao) {
+      case GOL:
+        Integer gols = desempenho.getGols() == null ? 0 : desempenho.getGols();
+        if (gols <= 0) throw new RegraDeNegocioException("Não há gols para remover.");
+        desempenho.setGols(gols - 1);
+        // Atualiza placar da partida
+        Time timeQueMarcou = desempenho.getTimeNaPartida();
+        if (partida.getTimeA().getId().equals(timeQueMarcou.getId())) {
+          partida.setTimeAPlacar(Math.max(0, partida.getTimeAPlacar() - 1));
+        } else {
+          partida.setTimeBPlacar(Math.max(0, partida.getTimeBPlacar() - 1));
+        }
+        partidaRepository.save(partida);
+        break;
+      case ASSISTENCIA:
+        Integer passes = desempenho.getPasses() == null ? 0 : desempenho.getPasses();
+        if (passes <= 0) throw new RegraDeNegocioException("Não há assistências para remover.");
+        desempenho.setPasses(passes - 1);
+        break;
+      case DEFESA:
+        Integer defesas = desempenho.getDefesas() == null ? 0 : desempenho.getDefesas();
+        if (defesas <= 0) throw new RegraDeNegocioException("Não há defesas para remover.");
+        desempenho.setDefesas(defesas - 1);
+        break;
+      default:
+        throw new RegraDeNegocioException("Tipo de ação não suportado para remoção.");
+    }
+
+    participacaoRepository.save(desempenho);
+    // Nota: não alteramos o histórico/histórico de pontuação do jogador ao remover ação
   }
 
   //finaliza a partida, define o vencedor e chama o serviço de rodízio de times
