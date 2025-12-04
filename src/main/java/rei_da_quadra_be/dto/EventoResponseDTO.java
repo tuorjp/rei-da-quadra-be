@@ -18,14 +18,12 @@ public class EventoResponseDTO {
     private Long id;
     private String nome;
     private String local;
+    private Double latitude;
+    private Double longitude;
     private OffsetDateTime dataHorario;
-
     private Long usuarioId;
     private String usuarioLogin;
     private String usuarioNome;
-
-    private Double latitude;
-    private Double longitude;
     private Boolean isOrganizer = false;
     private String status;
 
@@ -39,7 +37,6 @@ public class EventoResponseDTO {
         if (evento.getUsuario() != null) {
             dto.setUsuarioId(evento.getUsuario().getId());
             dto.setUsuarioLogin(evento.getUsuario().getEmail());
-
             dto.setUsuarioNome(evento.getUsuario().getNome());
         }
 
