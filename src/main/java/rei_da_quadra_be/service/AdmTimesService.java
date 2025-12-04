@@ -24,6 +24,8 @@ public class AdmTimesService {
   private final PartidaRepository partidaRepository;
   private final UserRepository userRepository;
 
+  private final HistoricoPontuacaoService historicoService;
+
   //cria os times de um evento que foi criado
   //nenhuma partida ocorreu ainda
   @Transactional
@@ -215,35 +217,38 @@ public class AdmTimesService {
     //o time perdedor recebe os novos jogadores e vira o "Desafiante".
   }
 
-  //método para atualizar pontuação individual chamado a cada gol/ação do tipo TipoAcaoEmJogo
+  //metodo para atualizar pontuação individual chamado a cada gol/ação do tipo TipoAcaoEmJogo
   @Transactional
-  public void computarAcaoJogador(Long jogadorId, TipoAcaoEmJogo tipoAcao) {
-    User user = userRepository.findById(jogadorId).orElseThrow();
+  public void computarAcaoJogador(Partida partida, Long jogadorId, TipoAcaoEmJogo tipoAcao) {
+      User user = userRepository.findById(jogadorId).orElseThrow();
 
-    int pontosGanhos = 0;
-    switch (tipoAcao) {
-      case TipoAcaoEmJogo.GOL:
-        pontosGanhos = 20;
-        break;
-      case TipoAcaoEmJogo.ASSISTENCIA:
-        pontosGanhos = 10;
-        break;
-      case TipoAcaoEmJogo.DEFESA:
-        pontosGanhos = 5;
-        break;
-      case TipoAcaoEmJogo.FALTA:
-        pontosGanhos = -15;
-        break;
-    }
+      int pontosGanhos = 0;
+      switch (tipoAcao) {
+          case GOL:
+              pontosGanhos = 15;
+              break;
+          case ASSISTENCIA:
+              pontosGanhos = 10;
+              break;
+          case DEFESA:
+              pontosGanhos = 5;
+              break;
+          case FALTA:
+              pontosGanhos = -15;
+              break;
+          case IMPEDIMENTO:
+              pontosGanhos = -5;
+              break;
+      }
 
-    //atualiza elo
-    user.setPontosHabilidade(user.getPontosHabilidade() + pontosGanhos);
+      historicoService.registrarAlteracao(user, partida, tipoAcao, pontosGanhos);
 
-    //atualizar o Nível se bater certas metas
-    if (user.getPontosHabilidade() > 2400) user.setNivelHabilidade(NivelHabilidade.CRAQUE);
-    else if (user.getPontosHabilidade() > 800) user.setNivelHabilidade(NivelHabilidade.MEDIANO);
+      // Verifica evolução de nível
+      if (user.getPontosHabilidade() > 2400) user.setNivelHabilidade(NivelHabilidade.CRAQUE);
+      else if (user.getPontosHabilidade() > 800) user.setNivelHabilidade(NivelHabilidade.MEDIANO);
+      else user.setNivelHabilidade(NivelHabilidade.PERNA_DE_PAU);
 
-    userRepository.save(user);
+      userRepository.save(user);
   }
 
   //métodos auxiliares

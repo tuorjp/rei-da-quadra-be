@@ -93,7 +93,7 @@ public class PartidaService {
 
     participacaoRepository.save(desempenho);
 
-    admTimesService.computarAcaoJogador(jogadorId, acao);
+    admTimesService.computarAcaoJogador(partida, jogadorId, acao);
   }
 
   //finaliza a partida, define o vencedor e chama o serviço de rodízio de times
