@@ -22,6 +22,7 @@ public class InscricaoResponseDTO {
     private Long timeAtualId;
     private String timeAtualNome;
     private LocalDateTime dataInscricao;
+    private String status;
     
     public static InscricaoResponseDTO fromEntity(Inscricao inscricao) {
         return InscricaoResponseDTO.builder()
@@ -33,6 +34,7 @@ public class InscricaoResponseDTO {
             .timeAtualId(inscricao.getTimeAtual() != null ? inscricao.getTimeAtual().getId() : null)
             .timeAtualNome(inscricao.getTimeAtual() != null ? inscricao.getTimeAtual().getNome() : null)
             .dataInscricao(inscricao.getDataInscricao())
+            .status(inscricao.getStatus().name())
             .build();
     }
 }
