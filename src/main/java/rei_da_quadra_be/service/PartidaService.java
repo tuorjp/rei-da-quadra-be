@@ -133,6 +133,9 @@ public class PartidaService {
         if (defesas <= 0) throw new RegraDeNegocioException("Não há defesas para remover.");
         desempenho.setDefesas(defesas - 1);
         break;
+      case FALTA:
+      case IMPEDIMENTO:
+        break;
       default:
         throw new RegraDeNegocioException("Tipo de ação não suportado para remoção.");
     }
