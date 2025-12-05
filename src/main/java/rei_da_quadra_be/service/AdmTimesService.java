@@ -11,6 +11,7 @@ import rei_da_quadra_be.repository.*;
 import rei_da_quadra_be.service.exception.EventoNaoEncontradoException;
 import rei_da_quadra_be.service.exception.NumeroInsuficienteInscritosException;
 import rei_da_quadra_be.service.exception.TimeDeEsperaNaoConfiguradoException;
+import rei_da_quadra_be.utils.EloCalculator;
 
 import java.util.*;
 
@@ -164,6 +165,11 @@ public class AdmTimesService {
 
     jogadoresTimeA.forEach(this::incrementarPartidaJogada);
     jogadoresTimeB.forEach(this::incrementarPartidaJogada);
+
+    // 2.5. Atualizar pontuação com base no sistema ELO
+    boolean timeAVenceu = partida.getTimeA().getId().equals(timeVencedorId);
+    atualizarPontuacaoElo(partida, partida.getTimeA(), partida.getTimeB(), timeAVenceu);
+    atualizarPontuacaoElo(partida, partida.getTimeB(), partida.getTimeA(), !timeAVenceu);
 
     // 3. Realizar Rodízio (Perdedor sai <-> Reserva entra)
     Time timeEspera = timeRepository
@@ -336,5 +342,90 @@ public class AdmTimesService {
           i.getTimeAtual() != null &&
           i.getTimeAtual().getId().equals(timeId)
       );
+  }
+
+  /**
+   * Atualiza a pontuação dos jogadores de um time usando o sistema de ELO.
+   *
+   * Fórmulas utilizadas:
+   * - Ea = 1.0 / (1 + Math.pow(10, (Rb - Ra) / 400.0))
+   *   Probabilidade esperada de vitória
+   * - R'a = Ra + K * (Sa − Ea)
+   *   Nova pontuação após a partida
+   *
+   * @param partida A partida que foi finalizada
+   * @param timeDeste O time do qual atualizar jogadores
+   * @param timeAdversario O time adversário
+   * @param venceu true se timeDeste venceu, false se perdeu
+   */
+  @Transactional
+  protected void atualizarPontuacaoElo(Partida partida, Time timeDeste, Time timeAdversario, boolean venceu) {
+    // Buscar todos os jogadores do time
+    List<Inscricao> jogadoresTime = inscricaoRepository.findByTimeAtualAndEvento(timeDeste, partida.getEvento());
+
+    if (jogadoresTime.isEmpty()) {
+      return;
+    }
+
+    // Calcular a média de pontos do time adversário
+    double mediaAdversario = calcularMediaPontosTIme(timeAdversario, partida.getEvento());
+
+    // Para cada jogador do time, calcular nova pontuação usando ELO
+    for (Inscricao inscricao : jogadoresTime) {
+      User jogador = inscricao.getJogador();
+      double pontoAtual = jogador.getPontosHabilidade();
+
+      // Calcular a variação de pontos usando as fórmulas de ELO
+      int variacao = EloCalculator.calcularVariacao(pontoAtual, mediaAdversario, venceu);
+
+      // Determinar o tipo de ação para registrar no histórico
+      TipoAcaoEmJogo tipoAcao = venceu ? TipoAcaoEmJogo.GOL : TipoAcaoEmJogo.IMPEDIMENTO;
+
+      // Registrar a alteração no histórico
+      historicoService.registrarAlteracao(jogador, partida, tipoAcao, variacao);
+
+      // Atualizar o nível de habilidade baseado na nova pontuação
+      atualizarNivelHabilidade(jogador);
+
+      // Salvar o jogador
+      userRepository.save(jogador);
+    }
+  }
+
+  /**
+   * Calcula a média de pontos de habilidade de todos os jogadores de um time.
+   *
+   * @param time O time
+   * @param evento O evento
+   * @return A média simples dos pontos de habilidade
+   */
+  private double calcularMediaPontosTIme(Time time, Evento evento) {
+    List<Inscricao> jogadoresTime = inscricaoRepository.findByTimeAtualAndEvento(time, evento);
+
+    if (jogadoresTime.isEmpty()) {
+      // Retorna 1000 (pontuação padrão) se não houver jogadores
+      return 1000.0;
+    }
+
+    double soma = jogadoresTime.stream()
+      .mapToDouble(i -> i.getJogador().getPontosHabilidade())
+      .sum();
+
+    return soma / jogadoresTime.size();
+  }
+
+  /**
+   * Atualiza o nível de habilidade do jogador com base na pontuação atual.
+   *
+   * @param jogador O jogador a atualizar
+   */
+  private void atualizarNivelHabilidade(User jogador) {
+    if (jogador.getPontosHabilidade() > 2400) {
+      jogador.setNivelHabilidade(NivelHabilidade.CRAQUE);
+    } else if (jogador.getPontosHabilidade() > 800) {
+      jogador.setNivelHabilidade(NivelHabilidade.MEDIANO);
+    } else {
+      jogador.setNivelHabilidade(NivelHabilidade.PERNA_DE_PAU);
+    }
   }
 }
