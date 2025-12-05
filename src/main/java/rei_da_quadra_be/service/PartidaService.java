@@ -159,12 +159,13 @@ public class PartidaService {
     } else if (partida.getTimeBPlacar() > partida.getTimeAPlacar()) {
       idVencedor = partida.getTimeB().getId();
     } else {
-      // Regra de empate: No Rei da Quadra não pode haver empate.
-      // Assume-se Time A (Rei) como vencedor ou lança erro. Aqui mantemos Time A.
-      idVencedor = partida.getTimeA().getId();
+      // Empate: nenhum vencedor (null indica empate)
+      // O Time A (Rei) sai para dar chance ao próximo desafiante
+      idVencedor = null;
     }
 
     // Processar rodízio (move jogadores entre time de espera e perdedor)
+    // Em caso de empate (idVencedor == null), o Time A sai
     Long proximoDesafianteId = admTimesService.processarFimDePartida(partida.getId(), idVencedor);
 
     // Verifica limite de partidas definido no evento
@@ -178,14 +179,22 @@ public class PartidaService {
       }
     }
 
-    // Determina vencedor e busca o time desafiante (pode ser o perdedor original ou outro time escolhido)
-    Time vencedor = partida.getTimeA().getId().equals(idVencedor) ? partida.getTimeA() : partida.getTimeB();
+    // Determina quem continua em campo e busca o time desafiante
+    Time timeQueContinua;
+    if (idVencedor == null) {
+      // Em caso de empate, o Time B (desafiante) continua em campo
+      timeQueContinua = partida.getTimeB();
+    } else {
+      // Em caso de vitória, o vencedor continua
+      timeQueContinua = partida.getTimeA().getId().equals(idVencedor) ? partida.getTimeA() : partida.getTimeB();
+    }
+    
     Time desafiante = timeService.buscarPorId(proximoDesafianteId);
 
-    // Cria nova partida com vencedor como Time A e desafiante como Time B
+    // Cria nova partida com o time que continua como Time A e desafiante como Time B
     Partida nova = new Partida();
     nova.setEvento(evento);
-    nova.setTimeA(vencedor);
+    nova.setTimeA(timeQueContinua);
     nova.setTimeB(desafiante);
     nova.setTimeAPlacar(0);
     nova.setTimeBPlacar(0);

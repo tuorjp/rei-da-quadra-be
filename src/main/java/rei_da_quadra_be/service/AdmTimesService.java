@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import rei_da_quadra_be.enums.NivelHabilidade;
+import rei_da_quadra_be.enums.ResultadoPartida;
 import rei_da_quadra_be.enums.StatusTime;
 import rei_da_quadra_be.enums.TipoAcaoEmJogo;
 import rei_da_quadra_be.model.*;
@@ -153,8 +154,14 @@ public class AdmTimesService {
       .orElseThrow(() -> new RuntimeException("Partida não encontrada"));
     Evento evento = partida.getEvento();
 
-    // 1. Identificar Perdedor
-    Time timePerdedor = partida.getTimeA().getId().equals(timeVencedorId) ? partida.getTimeB() : partida.getTimeA();
+    // 1. Identificar Perdedor (ou time que sai em caso de empate)
+    Time timePerdedor;
+    if (timeVencedorId == null) {
+      // Em caso de empate, o Time A (atual "Rei") sai para dar chance ao próximo
+      timePerdedor = partida.getTimeA();
+    } else {
+      timePerdedor = partida.getTimeA().getId().equals(timeVencedorId) ? partida.getTimeB() : partida.getTimeA();
+    }
 
     // 2. Atualizar Elo e Stats dos Jogadores (Incremento por gol/defesa deve ser feito antes, ao registrar o scout)
     // Aqui focamos na regra de rodízio.
@@ -167,9 +174,26 @@ public class AdmTimesService {
     jogadoresTimeB.forEach(this::incrementarPartidaJogada);
 
     // 2.5. Atualizar pontuação com base no sistema ELO
-    boolean timeAVenceu = partida.getTimeA().getId().equals(timeVencedorId);
-    atualizarPontuacaoElo(partida, partida.getTimeA(), partida.getTimeB(), timeAVenceu);
-    atualizarPontuacaoElo(partida, partida.getTimeB(), partida.getTimeA(), !timeAVenceu);
+    // Determinar o resultado para cada time
+    ResultadoPartida resultadoTimeA;
+    ResultadoPartida resultadoTimeB;
+    
+    if (timeVencedorId == null) {
+      // Empate
+      resultadoTimeA = ResultadoPartida.EMPATE;
+      resultadoTimeB = ResultadoPartida.EMPATE;
+    } else if (partida.getTimeA().getId().equals(timeVencedorId)) {
+      // Time A venceu
+      resultadoTimeA = ResultadoPartida.VITORIA;
+      resultadoTimeB = ResultadoPartida.DERROTA;
+    } else {
+      // Time B venceu
+      resultadoTimeA = ResultadoPartida.DERROTA;
+      resultadoTimeB = ResultadoPartida.VITORIA;
+    }
+    
+    atualizarPontuacaoElo(partida, partida.getTimeA(), partida.getTimeB(), resultadoTimeA);
+    atualizarPontuacaoElo(partida, partida.getTimeB(), partida.getTimeA(), resultadoTimeB);
 
     // 3. Realizar Rodízio (Perdedor sai <-> Reserva entra)
     Time timeEspera = timeRepository
@@ -306,6 +330,12 @@ public class AdmTimesService {
           case IMPEDIMENTO:
               pontosGanhos = -5;
               break;
+          case VITORIA_ELO:
+          case EMPATE_ELO:
+          case DERROTA_ELO:
+              // Ações de ELO não devem ser processadas aqui
+              // Elas são tratadas diretamente pelo método atualizarPontuacaoElo
+              throw new IllegalArgumentException("Ações de ELO não devem ser processadas através de computarAcaoJogador");
       }
 
       historicoService.registrarAlteracao(user, partida, tipoAcao, pontosGanhos);
@@ -356,10 +386,10 @@ public class AdmTimesService {
    * @param partida A partida que foi finalizada
    * @param timeDeste O time do qual atualizar jogadores
    * @param timeAdversario O time adversário
-   * @param venceu true se timeDeste venceu, false se perdeu
+   * @param resultado VITORIA, EMPATE ou DERROTA
    */
   @Transactional
-  protected void atualizarPontuacaoElo(Partida partida, Time timeDeste, Time timeAdversario, boolean venceu) {
+  protected void atualizarPontuacaoElo(Partida partida, Time timeDeste, Time timeAdversario, ResultadoPartida resultado) {
     // Buscar todos os jogadores do time
     List<Inscricao> jogadoresTime = inscricaoRepository.findByTimeAtualAndEvento(timeDeste, partida.getEvento());
 
@@ -376,10 +406,10 @@ public class AdmTimesService {
       double pontoAtual = jogador.getPontosHabilidade();
 
       // Calcular a variação de pontos usando as fórmulas de ELO
-      int variacao = EloCalculator.calcularVariacao(pontoAtual, mediaAdversario, venceu);
+      int variacao = EloCalculator.calcularVariacao(pontoAtual, mediaAdversario, resultado.getValorElo());
 
       // Determinar o tipo de ação para registrar no histórico
-      TipoAcaoEmJogo tipoAcao = venceu ? TipoAcaoEmJogo.GOL : TipoAcaoEmJogo.IMPEDIMENTO;
+      TipoAcaoEmJogo tipoAcao = resultado.getTipoAcaoElo();
 
       // Registrar a alteração no histórico
       historicoService.registrarAlteracao(jogador, partida, tipoAcao, variacao);

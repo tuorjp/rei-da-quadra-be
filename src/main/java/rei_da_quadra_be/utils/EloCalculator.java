@@ -40,5 +40,19 @@ public class EloCalculator {
     double novaAvaliacao = calcularNovaAvaliacao(raAtual, rbMedia, venceu);
     return (int) Math.round(novaAvaliacao - raAtual);
   }
+
+  /**
+   * Calcula a variação de pontos ELO considerando vitória, empate ou derrota.
+   *
+   * @param raAtual pontuação atual do jogador
+   * @param rbMedia pontuação média do time adversário
+   * @param resultado 1.0 para vitória, 0.5 para empate, 0.0 para derrota
+   * @return variação de pontos (pode ser positiva ou negativa)
+   */
+  public static int calcularVariacao(double raAtual, double rbMedia, double resultado) {
+    double ea = calcularProbabilidadeEsperada(raAtual, rbMedia);
+    double novaAvaliacao = calcularNovaAvaliacao(raAtual, ea, resultado);
+    return (int) Math.round(novaAvaliacao - raAtual);
+  }
 }
 

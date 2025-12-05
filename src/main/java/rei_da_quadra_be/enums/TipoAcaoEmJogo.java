@@ -5,5 +5,8 @@ public enum TipoAcaoEmJogo {
   ASSISTENCIA,
   DEFESA,
   FALTA,
-  IMPEDIMENTO
+  IMPEDIMENTO,
+  VITORIA_ELO,
+  EMPATE_ELO,
+  DERROTA_ELO
 }
