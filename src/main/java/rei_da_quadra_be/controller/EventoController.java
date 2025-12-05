@@ -78,8 +78,12 @@ public class EventoController {
     @AuthenticationPrincipal User usuario
   ) {
     return eventoService.buscarEventoPorId(id)
-      .filter(evento -> evento.getUsuario().getId().equals(usuario.getId()))
-      .map(evento -> ResponseEntity.ok(EventoResponseDTO.fromEvento(evento)))
+      .map(evento -> {
+        EventoResponseDTO dto = EventoResponseDTO.fromEvento(evento);
+        // Define se o usuário logado é o organizador para controle no frontend
+        dto.setIsOrganizer(evento.getUsuario().getId().equals(usuario.getId()));
+        return ResponseEntity.ok(dto);
+      })
       .orElse(ResponseEntity.notFound().build());
   }
 

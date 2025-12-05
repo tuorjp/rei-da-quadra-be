@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 import rei_da_quadra_be.enums.NivelHabilidade;
 import rei_da_quadra_be.enums.StatusEvento;
+import rei_da_quadra_be.enums.StatusInscricao;
 import rei_da_quadra_be.enums.TipoAcaoEmJogo;
 import rei_da_quadra_be.model.*;
 import rei_da_quadra_be.repository.*;
@@ -413,6 +414,8 @@ public class DatabaseSeeder {
         i.setEvento(evento);
         i.setJogador(user);
         i.setPartidasJogadas(0);
+        i.setDataInscricao(LocalDateTime.now());
+        i.setStatus(StatusInscricao.APROVADA);
         inscricaoRepository.save(i);
     }
 

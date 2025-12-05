@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import rei_da_quadra_be.enums.StatusInscricao;
 
 import java.time.LocalDateTime;
 
@@ -42,4 +43,8 @@ public class Inscricao {
 
   @Column(name = "data_inscricao", nullable = false)
   private LocalDateTime dataInscricao = LocalDateTime.now();
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "status", nullable = false)
+  private StatusInscricao status = StatusInscricao.PENDENTE;
 }

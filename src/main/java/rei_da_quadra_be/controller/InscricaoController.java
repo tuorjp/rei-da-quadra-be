@@ -115,4 +115,59 @@ public class InscricaoController {
       this.inscricaoService.removerInscricao(eventoId, inscricaoId, user);
       return ResponseEntity.ok().body(Map.of("message", "Inscrição deletada"));
     }
+    
+    @GetMapping("/pendentes")
+    @Operation(summary = "Lista todas as solicitações pendentes de um evento (apenas organizador)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Lista de solicitações pendentes retornada com sucesso", content = {
+            @Content(
+                mediaType = "application/json",
+                array = @ArraySchema(schema = @Schema(implementation = InscricaoResponseDTO.class))
+            )
+        }),
+        @ApiResponse(responseCode = "404", description = "Evento não encontrado", content = @Content),
+        @ApiResponse(responseCode = "403", description = "Apenas o organizador pode ver solicitações pendentes", content = @Content)
+    })
+    public ResponseEntity<List<InscricaoResponseDTO>> listarSolicitacoesPendentes(
+        @PathVariable Long eventoId,
+        @AuthenticationPrincipal User user
+    ) {
+        List<InscricaoResponseDTO> solicitacoes = inscricaoService.listarSolicitacoesPendentes(eventoId, user);
+        return ResponseEntity.ok(solicitacoes);
+    }
+    
+    @PostMapping("/{inscricaoId}/aprovar")
+    @Operation(summary = "Aprova uma solicitação de participação (apenas organizador)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Solicitação aprovada com sucesso",
+            content = @Content(mediaType = "application/json", schema = @Schema(implementation = InscricaoResponseDTO.class))),
+        @ApiResponse(responseCode = "400", description = "Solicitação não está pendente", content = @Content),
+        @ApiResponse(responseCode = "403", description = "Apenas o organizador pode aprovar solicitações", content = @Content),
+        @ApiResponse(responseCode = "404", description = "Evento ou inscrição não encontrada", content = @Content)
+    })
+    public ResponseEntity<InscricaoResponseDTO> aprovarSolicitacao(
+        @PathVariable Long eventoId,
+        @PathVariable Long inscricaoId,
+        @AuthenticationPrincipal User user
+    ) {
+        InscricaoResponseDTO inscricao = inscricaoService.aprovarSolicitacao(eventoId, inscricaoId, user);
+        return ResponseEntity.ok(inscricao);
+    }
+    
+    @PostMapping("/{inscricaoId}/rejeitar")
+    @Operation(summary = "Rejeita uma solicitação de participação (apenas organizador)")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Solicitação rejeitada com sucesso"),
+        @ApiResponse(responseCode = "400", description = "Solicitação não está pendente", content = @Content),
+        @ApiResponse(responseCode = "403", description = "Apenas o organizador pode rejeitar solicitações", content = @Content),
+        @ApiResponse(responseCode = "404", description = "Evento ou inscrição não encontrada", content = @Content)
+    })
+    public ResponseEntity<Void> rejeitarSolicitacao(
+        @PathVariable Long eventoId,
+        @PathVariable Long inscricaoId,
+        @AuthenticationPrincipal User user
+    ) {
+        inscricaoService.rejeitarSolicitacao(eventoId, inscricaoId, user);
+        return ResponseEntity.noContent().build();
+    }
 }
