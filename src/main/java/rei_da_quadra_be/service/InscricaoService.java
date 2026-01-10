@@ -15,6 +15,7 @@ import rei_da_quadra_be.repository.InscricaoRepository;
 import rei_da_quadra_be.repository.UserRepository;
 import rei_da_quadra_be.service.exception.EventoNaoEncontradoException;
 import rei_da_quadra_be.service.exception.RegraDeNegocioException;
+import rei_da_quadra_be.service.exception.UsuarioNaoEncontradoException;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -54,7 +55,7 @@ public class InscricaoService {
         } else if (request.getJogadorEmail() != null) {
             UserDetails userDetails = userRepository.findByEmail(request.getJogadorEmail());
             if (userDetails == null) {
-                throw new RegraDeNegocioException("Jogador não encontrado com este email");
+                throw new UsuarioNaoEncontradoException("Jogador não encontrado com este email");
             }
             jogador = (User) userDetails;
         } else {
